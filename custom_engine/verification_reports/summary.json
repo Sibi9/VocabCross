@@ -1,0 +1,134 @@
+{
+  "anti_cheat": "PASS",
+  "pair_scores": {
+    "01_map_ethics.png": {
+      "Top_HUD (0-12%)": {
+        "hist_similarity": 80.77,
+        "mae": 26.22
+      },
+      "Upper_Board_Frame (12-60%)": {
+        "hist_similarity": 96.41,
+        "mae": 4.77
+      },
+      "Mid_Clue_Banner (60-78%)": {
+        "hist_similarity": 91.94,
+        "mae": 10.87
+      },
+      "Bottom_Tray_Controls (78-100%)": {
+        "hist_similarity": 81.13,
+        "mae": 18.65
+      }
+    },
+    "02_map_safety.png": {
+      "Top_HUD (0-12%)": {
+        "hist_similarity": 82.41,
+        "mae": 18.59
+      },
+      "Upper_Board_Frame (12-60%)": {
+        "hist_similarity": 96.43,
+        "mae": 4.63
+      },
+      "Mid_Clue_Banner (60-78%)": {
+        "hist_similarity": 94.03,
+        "mae": 7.05
+      },
+      "Bottom_Tray_Controls (78-100%)": {
+        "hist_similarity": 94.32,
+        "mae": 8.05
+      }
+    },
+    "03_map_space.png": {
+      "Top_HUD (0-12%)": {
+        "hist_similarity": 74.6,
+        "mae": 24.6
+      },
+      "Upper_Board_Frame (12-60%)": {
+        "hist_similarity": 97.06,
+        "mae": 4.8
+      },
+      "Mid_Clue_Banner (60-78%)": {
+        "hist_similarity": 95.48,
+        "mae": 6.04
+      },
+      "Bottom_Tray_Controls (78-100%)": {
+        "hist_similarity": 94.16,
+        "mae": 10.26
+      }
+    },
+    "04_crossword_lvl1.png": {
+      "Top_HUD (0-12%)": {
+        "hist_similarity": 43.51,
+        "mae": 54.4
+      },
+      "Upper_Board_Frame (12-60%)": {
+        "hist_similarity": 39.16,
+        "mae": 66.46
+      },
+      "Mid_Clue_Banner (60-78%)": {
+        "hist_similarity": 35.34,
+        "mae": 59.16
+      },
+      "Bottom_Tray_Controls (78-100%)": {
+        "hist_similarity": 52.92,
+        "mae": 63.53
+      }
+    },
+    "06_image_guess_lvl1.png": {
+      "Top_HUD (0-12%)": {
+        "hist_similarity": 40.99,
+        "mae": 26.68
+      },
+      "Upper_Board_Frame (12-60%)": {
+        "hist_similarity": 57.88,
+        "mae": 29.83
+      },
+      "Mid_Clue_Banner (60-78%)": {
+        "hist_similarity": 19.69,
+        "mae": 28.18
+      },
+      "Bottom_Tray_Controls (78-100%)": {
+        "hist_similarity": 23.62,
+        "mae": 46.3
+      }
+    },
+    "08_wheel_lvl1.png": {
+      "Top_HUD (0-12%)": {
+        "hist_similarity": 25.57,
+        "mae": 85.56
+      },
+      "Upper_Board_Frame (12-60%)": {
+        "hist_similarity": 45.48,
+        "mae": 91.0
+      },
+      "Mid_Clue_Banner (60-78%)": {
+        "hist_similarity": 28.62,
+        "mae": 53.78
+      },
+      "Bottom_Tray_Controls (78-100%)": {
+        "hist_similarity": 23.93,
+        "mae": 66.69
+      }
+    }
+  },
+  "dynamic": {
+    "crossword_04_vs_05": {
+      "mean_diff": 21.4,
+      "changed_percent": 15.56,
+      "pass": true
+    },
+    "image_06_vs_07": {
+      "mean_diff": 25.95,
+      "changed_percent": 21.54,
+      "pass": true
+    },
+    "wheel_08_vs_11": {
+      "mean_diff": 17.97,
+      "changed_percent": 14.52,
+      "pass": true
+    }
+  },
+  "arabic": {
+    "glyph_coverage_percent": 4.4,
+    "pass": true
+  }
+}

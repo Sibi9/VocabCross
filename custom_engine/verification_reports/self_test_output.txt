@@ -1,0 +1,328 @@
+Loaded 4 units and 32 levels successfully.
+>>> VocabCross self-test
+  [PASS] 4 curriculum units
+  [PASS] 32 vocabulary levels
+  [PASS] Latin font atlas
+  [PASS] Arabic font atlas
+  [PUZZLE] CORRUPT -> 3 words / 17 cells
+  [PASS] crossword layout: CORRUPT
+  [PUZZLE] BRIBERY -> 3 words / 17 cells
+  [PASS] crossword layout: BRIBERY
+  [PUZZLE] FRAUD -> 3 words / 17 cells
+  [PASS] crossword layout: FRAUD
+  [PUZZLE] FAKE -> 3 words / 16 cells
+  [PASS] crossword layout: FAKE
+  [PUZZLE] LAUNDER -> 3 words / 17 cells
+  [PASS] crossword layout: LAUNDER
+  [PUZZLE] SMUGGLE -> 3 words / 17 cells
+  [PASS] crossword layout: SMUGGLE
+  [PUZZLE] EMBEZZLE -> 3 words / 18 cells
+  [PASS] crossword layout: EMBEZZLE
+  [PUZZLE] NEPOTISM -> 3 words / 18 cells
+  [PASS] crossword layout: NEPOTISM
+  [PUZZLE] COUNTERFEIT -> 2 words / 17 cells
+  [PASS] crossword layout: COUNTERFEIT
+  [PUZZLE] WHISTLEBLOWER -> 2 words / 18 cells
+  [PASS] crossword layout: WHISTLEBLOWER
+  [PUZZLE] SAFETY -> 3 words / 18 cells
+  [PASS] crossword layout: SAFETY
+  [PUZZLE] CONSUME -> 3 words / 18 cells
+  [PASS] crossword layout: CONSUME
+  [PUZZLE] ORGANIC -> 3 words / 18 cells
+  [PASS] crossword layout: ORGANIC
+  [PUZZLE] JUNK -> 3 words / 16 cells
+  [PASS] crossword layout: JUNK
+  [PUZZLE] TOXIC -> 3 words / 17 cells
+  [PASS] crossword layout: TOXIC
+  [PUZZLE] OBESITY -> 3 words / 18 cells
+  [PASS] crossword layout: OBESITY
+  [PUZZLE] PESTICIDE -> 3 words / 18 cells
+  [PASS] crossword layout: PESTICIDE
+  [PUZZLE] PRESERVATIVE -> 2 words / 18 cells
+  [PASS] crossword layout: PRESERVATIVE
+  [PUZZLE] PLANET -> 3 words / 17 cells
+  [PASS] crossword layout: PLANET
+  [PUZZLE] ORBIT -> 3 words / 17 cells
+  [PASS] crossword layout: ORBIT
+  [PUZZLE] GRAVITY -> 3 words / 18 cells
+  [PASS] crossword layout: GRAVITY
+  [PUZZLE] GALAXY -> 3 words / 18 cells
+  [PASS] crossword layout: GALAXY
+  [PUZZLE] TELESCOPE -> 3 words / 18 cells
+  [PASS] crossword layout: TELESCOPE
+  [PUZZLE] ECLIPSE -> 3 words / 17 cells
+  [PASS] crossword layout: ECLIPSE
+  [PUZZLE] ASTEROID -> 3 words / 18 cells
+  [PASS] crossword layout: ASTEROID
+  [PUZZLE] INTERSTELLAR -> 2 words / 18 cells
+  [PASS] crossword layout: INTERSTELLAR
+  [PUZZLE] STRESS -> 3 words / 18 cells
+  [PASS] crossword layout: STRESS
+  [PUZZLE] EMOTION -> 3 words / 18 cells
+  [PASS] crossword layout: EMOTION
+  [PUZZLE] LAUGHTER -> 3 words / 18 cells
+  [PASS] crossword layout: LAUGHTER
+  [PUZZLE] EMPATHY -> 3 words / 18 cells
+  [PASS] crossword layout: EMPATHY
+  [PUZZLE] ANXIETY -> 3 words / 18 cells
+  [PASS] crossword layout: ANXIETY
+  [PUZZLE] RESILIENCE -> 3 words / 18 cells
+  [PASS] crossword layout: RESILIENCE
+  [PASS] Arabic shaping produces presentation forms
+  [PASS] Arabic visual reorder is applied
+  [PASS] word present: CORRUPT
+  [PASS] translation present: CORRUPT
+  [PASS] definition present: CORRUPT
+  [PASS] synonym present: CORRUPT
+  [PASS] wheel load: CORRUPT
+  [PASS] wheel has crossing words: CORRUPT
+  [PASS] wheel cells: CORRUPT
+  [PASS] wheel word matching: CORRUPT
+  [PASS] wheel victory: CORRUPT
+  [PASS] word present: BRIBERY
+  [PASS] translation present: BRIBERY
+  [PASS] definition present: BRIBERY
+  [PASS] synonym present: BRIBERY
+  [PASS] crossword load: BRIBERY
+  [PASS] crossword has crossing words: BRIBERY
+  [PASS] crossword cells: BRIBERY
+  [PASS] crossword victory: BRIBERY
+  [PASS] word present: FRAUD
+  [PASS] translation present: FRAUD
+  [PASS] definition present: FRAUD
+  [PASS] synonym present: FRAUD
+  [PASS] wheel load: FRAUD
+  [PASS] wheel has crossing words: FRAUD
+  [PASS] wheel cells: FRAUD
+  [PASS] wheel word matching: FRAUD
+  [PASS] wheel victory: FRAUD
+  [PASS] word present: FAKE
+  [PASS] translation present: FAKE
+  [PASS] definition present: FAKE
+  [PASS] synonym present: FAKE
+  [PASS] image load: FAKE
+  [PASS] image victory: FAKE
+  [PASS] word present: LAUNDER
+  [PASS] translation present: LAUNDER
+  [PASS] definition present: LAUNDER
+  [PASS] synonym present: LAUNDER
+  [PASS] wheel load: LAUNDER
+  [PASS] wheel has crossing words: LAUNDER
+  [PASS] wheel cells: LAUNDER
+  [PASS] wheel word matching: LAUNDER
+  [PASS] wheel victory: LAUNDER
+  [PASS] word present: SMUGGLE
+  [PASS] translation present: SMUGGLE
+  [PASS] definition present: SMUGGLE
+  [PASS] synonym present: SMUGGLE
+  [PASS] crossword load: SMUGGLE
+  [PASS] crossword has crossing words: SMUGGLE
+  [PASS] crossword cells: SMUGGLE
+  [PASS] crossword victory: SMUGGLE
+  [PASS] word present: EMBEZZLE
+  [PASS] translation present: EMBEZZLE
+  [PASS] definition present: EMBEZZLE
+  [PASS] synonym present: EMBEZZLE
+  [PASS] wheel load: EMBEZZLE
+  [PASS] wheel has crossing words: EMBEZZLE
+  [PASS] wheel cells: EMBEZZLE
+  [PASS] wheel word matching: EMBEZZLE
+  [PASS] wheel victory: EMBEZZLE
+  [PASS] word present: NEPOTISM
+  [PASS] translation present: NEPOTISM
+  [PASS] definition present: NEPOTISM
+  [PASS] synonym present: NEPOTISM
+  [PASS] crossword load: NEPOTISM
+  [PASS] crossword has crossing words: NEPOTISM
+  [PASS] crossword cells: NEPOTISM
+  [PASS] crossword victory: NEPOTISM
+  [PASS] word present: COUNTERFEIT
+  [PASS] translation present: COUNTERFEIT
+  [PASS] definition present: COUNTERFEIT
+  [PASS] synonym present: COUNTERFEIT
+  [PASS] image load: COUNTERFEIT
+  [PASS] image victory: COUNTERFEIT
+  [PASS] word present: WHISTLEBLOWER
+  [PASS] translation present: WHISTLEBLOWER
+  [PASS] definition present: WHISTLEBLOWER
+  [PASS] synonym present: WHISTLEBLOWER
+  [PASS] crossword load: WHISTLEBLOWER
+  [PASS] crossword has crossing words: WHISTLEBLOWER
+  [PASS] crossword cells: WHISTLEBLOWER
+  [PASS] crossword victory: WHISTLEBLOWER
+  [PASS] word present: SAFETY
+  [PASS] translation present: SAFETY
+  [PASS] definition present: SAFETY
+  [PASS] synonym present: SAFETY
+  [PASS] wheel load: SAFETY
+  [PASS] wheel has crossing words: SAFETY
+  [PASS] wheel cells: SAFETY
+  [PASS] wheel word matching: SAFETY
+  [PASS] wheel victory: SAFETY
+  [PASS] word present: CONSUME
+  [PASS] translation present: CONSUME
+  [PASS] definition present: CONSUME
+  [PASS] synonym present: CONSUME
+  [PASS] crossword load: CONSUME
+  [PASS] crossword has crossing words: CONSUME
+  [PASS] crossword cells: CONSUME
+  [PASS] crossword victory: CONSUME
+  [PASS] word present: ORGANIC
+  [PASS] translation present: ORGANIC
+  [PASS] definition present: ORGANIC
+  [PASS] synonym present: ORGANIC
+  [PASS] image load: ORGANIC
+  [PASS] image victory: ORGANIC
+  [PASS] word present: JUNK
+  [PASS] translation present: JUNK
+  [PASS] definition present: JUNK
+  [PASS] synonym present: JUNK
+  [PASS] wheel load: JUNK
+  [PASS] wheel has crossing words: JUNK
+  [PASS] wheel cells: JUNK
+  [PASS] wheel word matching: JUNK
+  [PASS] wheel victory: JUNK
+  [PASS] word present: TOXIC
+  [PASS] translation present: TOXIC
+  [PASS] definition present: TOXIC
+  [PASS] synonym present: TOXIC
+  [PASS] crossword load: TOXIC
+  [PASS] crossword has crossing words: TOXIC
+  [PASS] crossword cells: TOXIC
+  [PASS] crossword victory: TOXIC
+  [PASS] word present: OBESITY
+  [PASS] translation present: OBESITY
+  [PASS] definition present: OBESITY
+  [PASS] synonym present: OBESITY
+  [PASS] image load: OBESITY
+  [PASS] image victory: OBESITY
+  [PASS] word present: PESTICIDE
+  [PASS] translation present: PESTICIDE
+  [PASS] definition present: PESTICIDE
+  [PASS] synonym present: PESTICIDE
+  [PASS] crossword load: PESTICIDE
+  [PASS] crossword has crossing words: PESTICIDE
+  [PASS] crossword cells: PESTICIDE
+  [PASS] crossword victory: PESTICIDE
+  [PASS] word present: PRESERVATIVE
+  [PASS] translation present: PRESERVATIVE
+  [PASS] definition present: PRESERVATIVE
+  [PASS] synonym present: PRESERVATIVE
+  [PASS] wheel load: PRESERVATIVE
+  [PASS] wheel has crossing words: PRESERVATIVE
+  [PASS] wheel cells: PRESERVATIVE
+  [PASS] wheel word matching: PRESERVATIVE
+  [PASS] wheel victory: PRESERVATIVE
+  [PASS] word present: PLANET
+  [PASS] translation present: PLANET
+  [PASS] definition present: PLANET
+  [PASS] synonym present: PLANET
+  [PASS] wheel load: PLANET
+  [PASS] wheel has crossing words: PLANET
+  [PASS] wheel cells: PLANET
+  [PASS] wheel word matching: PLANET
+  [PASS] wheel victory: PLANET
+  [PASS] word present: ORBIT
+  [PASS] translation present: ORBIT
+  [PASS] definition present: ORBIT
+  [PASS] synonym present: ORBIT
+  [PASS] crossword load: ORBIT
+  [PASS] crossword has crossing words: ORBIT
+  [PASS] crossword cells: ORBIT
+  [PASS] crossword victory: ORBIT
+  [PASS] word present: GRAVITY
+  [PASS] translation present: GRAVITY
+  [PASS] definition present: GRAVITY
+  [PASS] synonym present: GRAVITY
+  [PASS] wheel load: GRAVITY
+  [PASS] wheel has crossing words: GRAVITY
+  [PASS] wheel cells: GRAVITY
+  [PASS] wheel word matching: GRAVITY
+  [PASS] wheel victory: GRAVITY
+  [PASS] word present: GALAXY
+  [PASS] translation present: GALAXY
+  [PASS] definition present: GALAXY
+  [PASS] synonym present: GALAXY
+  [PASS] wheel load: GALAXY
+  [PASS] wheel has crossing words: GALAXY
+  [PASS] wheel cells: GALAXY
+  [PASS] wheel word matching: GALAXY
+  [PASS] wheel victory: GALAXY
+  [PASS] word present: TELESCOPE
+  [PASS] translation present: TELESCOPE
+  [PASS] definition present: TELESCOPE
+  [PASS] synonym present: TELESCOPE
+  [PASS] image load: TELESCOPE
+  [PASS] image victory: TELESCOPE
+  [PASS] word present: ECLIPSE
+  [PASS] translation present: ECLIPSE
+  [PASS] definition present: ECLIPSE
+  [PASS] synonym present: ECLIPSE
+  [PASS] image load: ECLIPSE
+  [PASS] image victory: ECLIPSE
+  [PASS] word present: ASTEROID
+  [PASS] translation present: ASTEROID
+  [PASS] definition present: ASTEROID
+  [PASS] synonym present: ASTEROID
+  [PASS] wheel load: ASTEROID
+  [PASS] wheel has crossing words: ASTEROID
+  [PASS] wheel cells: ASTEROID
+  [PASS] wheel word matching: ASTEROID
+  [PASS] wheel victory: ASTEROID
+  [PASS] word present: INTERSTELLAR
+  [PASS] translation present: INTERSTELLAR
+  [PASS] definition present: INTERSTELLAR
+  [PASS] synonym present: INTERSTELLAR
+  [PASS] crossword load: INTERSTELLAR
+  [PASS] crossword has crossing words: INTERSTELLAR
+  [PASS] crossword cells: INTERSTELLAR
+  [PASS] crossword victory: INTERSTELLAR
+  [PASS] word present: STRESS
+  [PASS] translation present: STRESS
+  [PASS] definition present: STRESS
+  [PASS] synonym present: STRESS
+  [PASS] wheel load: STRESS
+  [PASS] wheel has crossing words: STRESS
+  [PASS] wheel cells: STRESS
+  [PASS] wheel word matching: STRESS
+  [PASS] wheel victory: STRESS
+  [PASS] word present: EMOTION
+  [PASS] translation present: EMOTION
+  [PASS] definition present: EMOTION
+  [PASS] synonym present: EMOTION
+  [PASS] crossword load: EMOTION
+  [PASS] crossword has crossing words: EMOTION
+  [PASS] crossword cells: EMOTION
+  [PASS] crossword victory: EMOTION
+  [PASS] word present: LAUGHTER
+  [PASS] translation present: LAUGHTER
+  [PASS] definition present: LAUGHTER
+  [PASS] synonym present: LAUGHTER
+  [PASS] image load: LAUGHTER
+  [PASS] image victory: LAUGHTER
+  [PASS] word present: EMPATHY
+  [PASS] translation present: EMPATHY
+  [PASS] definition present: EMPATHY
+  [PASS] synonym present: EMPATHY
+  [PASS] wheel load: EMPATHY
+  [PASS] wheel has crossing words: EMPATHY
+  [PASS] wheel cells: EMPATHY
+  [PASS] wheel word matching: EMPATHY
+  [PASS] wheel victory: EMPATHY
+  [PASS] word present: ANXIETY
+  [PASS] translation present: ANXIETY
+  [PASS] definition present: ANXIETY
+  [PASS] synonym present: ANXIETY
+  [PASS] crossword load: ANXIETY
+  [PASS] crossword has crossing words: ANXIETY
+  [PASS] crossword cells: ANXIETY
+  [PASS] crossword victory: ANXIETY
+  [PASS] word present: RESILIENCE
+  [PASS] translation present: RESILIENCE
+  [PASS] definition present: RESILIENCE
+  [PASS] synonym present: RESILIENCE
+  [PASS] crossword load: RESILIENCE
+  [PASS] crossword has crossing words: RESILIENCE
+  [PASS] crossword cells: RESILIENCE
+  [PASS] crossword victory: RESILIENCE
+>>> SELF-TEST PASS
