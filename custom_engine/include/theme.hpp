@@ -80,6 +80,10 @@ inline void loadFonts() {
     SetTextureFilter(fontArabic.texture, TEXTURE_FILTER_BILINEAR);
 }
 
+inline void initFonts() {
+    loadFonts();
+}
+
 inline void unloadFonts() {
     if (fontCartoon.texture.id > 0) UnloadFont(fontCartoon);
     if (fontArabic.texture.id > 0) UnloadFont(fontArabic);

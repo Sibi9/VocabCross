@@ -1,14 +1,16 @@
 #pragma once
+
 #include "raylib.h"
-#include "input.hpp"
 #include "audio_manager.hpp"
-#include "decor_art.hpp"
 #include "game_data.hpp"
+#include "input.hpp"
 #include "theme.hpp"
+#include "ui_asset_pack.hpp"
 #include "ui_widgets.hpp"
 #include "victory_modal.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -16,428 +18,177 @@
 class ScreenImageGuess {
 public:
     VictoryModal victoryModal;
-    Texture2D clueTexture{};
     std::string targetWord = "ECLIPSE";
     std::string currentGuess;
     std::vector<char> keys;
     std::vector<bool> keyUsed;
     int currentLevelIdx = 0;
-    int hintsRemaining = 3;
-    bool completed = false;
-    bool wrongFlash = false;
-    float wrongTimer = 0.0f;
-    float time = 0.0f;
-    float shake = 0.0f;
-    float hintToastTimer = 0.0f;
-    std::string hintToastText;
 
     void init() {
         victoryModal.init();
-        loadLevel(gGameData.current_level);
+        setLevel(0);
     }
 
-    void unload() {
-        if (clueTexture.id > 0) UnloadTexture(clueTexture);
-    }
-
-    std::string resolveClueImage(const WordData& w) {
-        if (w.image_keyword == "eclipse") return "assets/images/eclipse.png";
-        if (w.image_keyword.find("counterfeit") != std::string::npos ||
-            w.image_keyword.find("fake") != std::string::npos) return "assets/images/counterfeit.png";
-        if (w.image_keyword.find("organic") != std::string::npos) return "assets/images/organic.png";
-        if (w.image_keyword.find("galaxy") != std::string::npos ||
-            w.image_keyword.find("nebula") != std::string::npos) return "assets/images/galaxy.png";
-        if (w.image_keyword.find("telescope") != std::string::npos) return "assets/images/telescope.png";
-        if (w.image_keyword.find("orbit") != std::string::npos ||
-            w.image_keyword.find("planet") != std::string::npos ||
-            w.image_keyword.find("asteroid") != std::string::npos) return "assets/images/planet.png";
-        if (w.image_keyword.find("burger") != std::string::npos ||
-            w.image_keyword.find("obesity") != std::string::npos) return "assets/images/junk_food.png";
-        if (w.image_keyword.find("laugh") != std::string::npos) return "assets/images/laughter.png";
-        if (w.image_keyword.find("stress") != std::string::npos) return "assets/images/stress.png";
-        if (w.word == "ECLIPSE") return "assets/images/eclipse.png";
-        if (w.word == "ORGANIC") return "assets/images/organic.png";
-        if (w.word == "GALAXY") return "assets/images/galaxy.png";
-        if (w.word == "TELESCOPE") return "assets/images/telescope.png";
-        if (w.word == "COUNTERFEIT" || w.word == "FAKE") return "assets/images/counterfeit.png";
-        if (w.word == "LAUGHTER") return "assets/images/laughter.png";
-        return "assets/images/eclipse.png";
-    }
-
-    void loadLevel(int levelIdx) {
-        currentLevelIdx = std::clamp(levelIdx, 0, std::max(0, gGameData.levelCount() - 1));
-        if (gGameData.levelCount() == 0) return;
-        auto& level = gGameData.levels[currentLevelIdx];
-        targetWord = level.data.word;
+    void setLevel(int index) {
+        if (gGameData.levels.empty()) return;
+        currentLevelIdx = std::clamp(index, 0, (int)gGameData.levels.size() - 1);
+        targetWord = gGameData.levels[currentLevelIdx].word.word;
         currentGuess.clear();
-        completed = false;
-        wrongFlash = false;
-        wrongTimer = 0.0f;
-        hintsRemaining = 3;
-        hintToastTimer = 0.0f;
         victoryModal.hide();
-        if (clueTexture.id > 0) {
-            UnloadTexture(clueTexture);
-            clueTexture = Texture2D{};
-        }
-        std::string path = resolveClueImage(level.data);
-        if (FileExists(path.c_str())) clueTexture = Art::LoadRoundedTexture(path, 0.10f);
-        setupKeyboard();
-    }
 
-    void resetStage() { loadLevel(gGameData.current_level); }
-
-    void setupKeyboard() {
         keys.clear();
         keyUsed.clear();
-        if (targetWord == "ECLIPSE") {
-            std::string ks = "EPSOITLCRAENGY";
-            for (char c : ks) keys.push_back(c);
-        } else {
-            for (char c : targetWord) keys.push_back(c);
-            const std::string decoys = "ETAOINSRHLDCUM";
-            for (char c : decoys) {
-                if ((int)keys.size() >= 14) break;
-                keys.push_back(c);
-            }
-            while ((int)keys.size() < 14) keys.push_back('Y');
-            unsigned seed = (unsigned)currentLevelIdx * 2246822519u + 7u;
-            for (size_t i = keys.size(); i > 1; --i) {
-                seed = seed * 1664525u + 1013904223u;
-                size_t j = seed % i;
-                std::swap(keys[i - 1], keys[j]);
-            }
+        for (char c : targetWord) {
+            if (std::isalpha((unsigned char)c)) keys.push_back((char)std::toupper((unsigned char)c));
+        }
+        const std::string extra = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        while (keys.size() < 14) {
+            keys.push_back(extra[(keys.size() * 5 + currentLevelIdx * 3) % 26]);
         }
         keyUsed.assign(keys.size(), false);
     }
 
-    void shuffleKeys() {
-        unsigned seed = (unsigned)(GetTime() * 1000.0) + 13u;
-        for (size_t i = keys.size(); i > 1; --i) {
-            seed = seed * 1664525u + 1013904223u;
-            size_t j = seed % i;
-            std::swap(keys[i - 1], keys[j]);
-            std::swap(keyUsed[i - 1], keyUsed[j]);
-        }
-    }
-
-    void checkComplete() {
-        if ((int)currentGuess.size() != (int)targetWord.size()) return;
-        if (currentGuess == targetWord) {
-            gAudio.playFanfare();
-            complete();
-        } else {
-            wrongFlash = true;
-            wrongTimer = 0.55f;
-            shake = 10.0f;
-            gAudio.playClick();
-        }
-    }
-
-    void complete() {
-        if (completed) return;
-        completed = true;
-        gGameData.completeLevel(currentLevelIdx, 3);
-        victoryModal.show(gGameData.levels[currentLevelIdx].data);
-    }
-
-    void hint() {
-        if (completed) return;
-        if ((int)currentGuess.size() >= (int)targetWord.size()) return;
-        // If the player has a wrong prefix, the hint restarts from the first
-        // letter instead of appending a correct letter after a wrong one.
-        if (targetWord.rfind(currentGuess, 0) != 0) clearWrong();
-        char next = targetWord[currentGuess.size()];
-        currentGuess += next;
-        for (size_t i = 0; i < keys.size(); ++i) {
-            if (!keyUsed[i] && keys[i] == next) {
-                keyUsed[i] = true;
-                break;
-            }
-        }
-        if (hintsRemaining > 0) hintsRemaining--;
-        hintToastText = gGameData.levels[currentLevelIdx].data.translation_ar;
-        hintToastTimer = 2.4f;
-        gAudio.playChime();
-        checkComplete();
-    }
-
-    void clearWrong() {
-        currentGuess.clear();
-        for (size_t i = 0; i < keyUsed.size(); ++i) keyUsed[i] = false;
-        wrongFlash = false;
-        shake = 0.0f;
-    }
-
-    void typeLetter(int keyIndex) {
-        if (keyIndex < 0 || keyIndex >= (int)keys.size()) return;
-        if (keyUsed[keyIndex]) return;
-        if ((int)currentGuess.size() >= (int)targetWord.size()) return;
-        currentGuess += keys[keyIndex];
-        keyUsed[keyIndex] = true;
-        gAudio.playPop();
-        checkComplete();
-    }
-
-    void backspace() {
-        if (currentGuess.empty()) return;
-        char removed = currentGuess.back();
-        currentGuess.pop_back();
-        for (int i = (int)keys.size() - 1; i >= 0; --i) {
-            if (keyUsed[i] && keys[i] == removed) {
-                keyUsed[i] = false;
-                break;
+    void revealHint() {
+        if (currentGuess.size() < targetWord.size()) {
+            char c = (char)std::toupper((unsigned char)targetWord[currentGuess.size()]);
+            currentGuess.push_back(c);
+            gAudio.playPop();
+            if (currentGuess == targetWord && !gGameData.levels.empty()) {
+                gGameData.completeLevel(currentLevelIdx, 3);
+                victoryModal.show(gGameData.levels[currentLevelIdx].word);
             }
         }
     }
 
-    void handleInput(int screenW, int screenH, int& nextScreen) {
-        (void)screenW;
-        (void)screenH;
+    int update(float dt) {
         if (victoryModal.active) {
-            bool next = false, map = false;
-            victoryModal.handleInput(screenW, screenH, next, map);
-            if (next) {
-                nextScreen = Nav::stageScreenForLevel(gGameData.current_level);
-                loadLevel(gGameData.current_level);
-            } else if (map) {
-                nextScreen = Nav::SCREEN_MAP;
+            victoryModal.update(dt);
+            if (victoryModal.nextClicked) {
+                setLevel((currentLevelIdx + 1) % std::max(1, gGameData.levelCount()));
+                return -1;
             }
-            return;
-        }
-        if (wrongFlash) return;
-        Vector2 mouse = Input::Mouse();
-        bool released = IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
-
-        Rectangle pause{ 18.0f, 22.0f, 54.0f, 54.0f };
-        if (released && CheckCollisionPointCircle(mouse, { 45.0f, 49.0f }, 28.0f)) {
-            gAudio.playClick();
-            nextScreen = Nav::SCREEN_MAP;
-            return;
-        }
-        (void)pause;
-        Rectangle bubble{ 318.0f, 105.0f, 106.0f, 62.0f };
-        if (released && CheckCollisionPointRec(mouse, bubble)) {
-            hint();
-            return;
-        }
-        if (released && CheckCollisionPointRec(mouse, { 372.0f, 885.0f, 145.0f, 56.0f })) {
-            gAudio.playFanfare();
-            currentGuess = targetWord;
-            complete();
-            return;
-        }
-        if (released && CheckCollisionPointRec(mouse, { 24.0f, 884.0f, 94.0f, 62.0f })) {
-            shuffleKeys();
-            gAudio.playClick();
-            return;
-        }
-        if (released && CheckCollisionPointRec(mouse, { 286.0f, 884.0f, 52.0f, 52.0f })) {
-            backspace();
-            gAudio.playClick();
-            return;
+            if (victoryModal.mapClicked) {
+                victoryModal.hide();
+                return Nav::SCREEN_MAP;
+            }
+            return -1;
         }
 
-        // backspace via slots
-        if (released) {
-            float slotW, gap = 8.0f, total, startX;
-            computeSlots(slotW, gap, total, startX);
-            for (size_t i = 0; i < currentGuess.size(); ++i) {
-                Rectangle s{ startX + (float)i * (slotW + gap), 618.0f, slotW, 64.0f };
-                if (CheckCollisionPointRec(mouse, s)) {
-                    // Remove the clicked letter and everything after it.
-                    while ((int)currentGuess.size() > (int)i) backspace();
-                    return;
-                }
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            Vector2 m = Input::Mouse();
+            // Pause / Back button
+            if (CheckCollisionPointRec(m, Rectangle{ 18, 22, 60, 60 })) {
+                gAudio.playClick();
+                return Nav::SCREEN_MAP;
             }
-        }
-
-        // keyboard
-        if (released) {
-            for (int i = 0; i < (int)keys.size(); ++i) {
-                Rectangle k = keyRect(i);
-                if (CheckCollisionPointRec(mouse, k)) {
-                    typeLetter(i);
-                    return;
-                }
+            // Robot Helper / Speech Bubble Hint
+            if (CheckCollisionPointRec(m, Rectangle{ 310, 95, 215, 110 })) {
+                revealHint();
+                return -1;
             }
-        }
-        int k = GetKeyPressed();
-        while (k > 0) {
-            if (k >= 'A' && k <= 'Z') {
-                for (int i = 0; i < (int)keys.size(); ++i) {
-                    if (!keyUsed[i] && keys[i] == (char)k) {
-                        typeLetter(i);
-                        break;
+            // Skip button
+            if (CheckCollisionPointRec(m, Rectangle{ 372, 885, 145, 56 })) {
+                setLevel((currentLevelIdx + 1) % std::max(1, gGameData.levelCount()));
+                gAudio.playClick();
+                return -1;
+            }
+            // 2x7 Keyboard Tiles
+            for (int i = 0; i < 14 && i < (int)keys.size(); ++i) {
+                int r = i / 7;
+                int c = i % 7;
+                Rectangle kRec{ 24.0f + c * 71.0f, 730.0f + r * 74.0f, 64.0f, 64.0f };
+                if (!keyUsed[i] && CheckCollisionPointRec(m, kRec)) {
+                    keyUsed[i] = true;
+                    currentGuess.push_back(keys[i]);
+                    gAudio.playPop();
+                    if (currentGuess == targetWord && !gGameData.levels.empty()) {
+                        gGameData.completeLevel(currentLevelIdx, 3);
+                        victoryModal.show(gGameData.levels[currentLevelIdx].word);
+                    } else if (currentGuess.size() >= targetWord.size()) {
+                        currentGuess.clear();
+                        std::fill(keyUsed.begin(), keyUsed.end(), false);
                     }
+                    break;
                 }
-            } else if (k == KEY_BACKSPACE) {
-                backspace();
             }
-            k = GetKeyPressed();
         }
+        return -1;
     }
 
-    void computeSlots(float& slotW, float& gap, float& total, float& startX) const {
+    void draw(int w, int h) {
+        float t = Theme::timeNow;
+
+        // 1. Academic Navy Background
+        DrawRectangleGradientV(0, 0, w, h, Color{ 17, 28, 53, 255 }, Color{ 11, 19, 36, 255 });
+
+        // 2. Top Pause Button, Pencil Progress Bar & Coin Pill
+        UI::GradientRound({ 18, 22, 58, 58 }, 18.0f, Color{ 59, 130, 246, 255 }, Color{ 29, 78, 216, 255 });
+        Theme::text3D("||", { 47, 51 }, 24, WHITE, BLACK, 2.0f, BLACK, true, true);
+
+        // Pencil Progress Bar
+        UI::GradientRound({ 110, 28, 280, 38 }, 14.0f, Color{ 245, 158, 11, 255 }, Color{ 180, 83, 9, 255 });
+        UI::GradientRound({ 145, 34, 210, 26 }, 8.0f, Color{ 34, 197, 94, 255 }, Color{ 21, 128, 61, 255 });
+        Theme::text3D("LEVEL " + std::to_string(currentLevelIdx + 1) + "/" + std::to_string(std::max(1, gGameData.levelCount())),
+                      { 250, 80 }, 16, Color{ 253, 224, 71, 255 }, BLACK, 2.0f, BLACK, true, true);
+
+        UI::GradientRound({ 412, 26, 112, 42 }, 18.0f, Color{ 15, 23, 42, 255 }, Color{ 30, 41, 59, 255 });
+        Theme::text3D(std::to_string(Theme::coins), { 476, 47 }, 20, Color{ 253, 224, 71, 255 }, BLACK, 2.0f, BLACK, true, true);
+
+        // 3. Ornate Academic Picture Frame + Clue Image
+        Rectangle frameOuter{ 82, 182, 376, 396 };
+        UI::DropShadow(frameOuter, 26.0f, 8.0f, 0.45f, 4.0f);
+        UI::GradientRound(frameOuter, 26.0f, Color{ 251, 191, 36, 255 }, Color{ 180, 83, 9, 255 });
+        Rectangle frameInner{ 102, 204, 336, 352 };
+        UI::GradientRound(frameInner, 20.0f, Color{ 14, 165, 233, 255 }, Color{ 3, 105, 161, 255 });
+
+        std::string imgKey = "assets/images/eclipse.png";
+        if (!gGameData.levels.empty() && !gGameData.levels[currentLevelIdx].word.image_keyword.empty()) {
+            imgKey = "assets/images/" + gGameData.levels[currentLevelIdx].word.image_keyword + ".png";
+        }
+        UIAssets::drawFit(imgKey, Rectangle{ 114, 218, 312, 324 });
+
+        // 4. Animated Graduation Robot (60-frame sequence from robot_animation_studio_fixed)
+        UI::GradientRound({ 305, 112, 118, 48 }, 16.0f, WHITE, Color{ 226, 232, 240, 255 });
+        Theme::text3D("NEED A HINT?", { 364, 136 }, 14, Color{ 15, 23, 42, 255 }, WHITE, 1.0f, BLANK, true, true);
+
+        Rectangle robotRec{ 412, 88, 118, 128 };
+        if (!UIAssets::drawFrameSequence("frames_master/frame_", 60, t, 24.0f, robotRec)) {
+            UIAssets::drawFit("clean_layers/body_armless_whole_visor.png", robotRec);
+        }
+
+        // 5. Dashed Answer Slots
         int n = (int)targetWord.size();
-        gap = 8.0f;
-        slotW = std::min(62.0f, (472.0f - gap * (n - 1)) / std::max(1, n));
-        total = n * slotW + (n - 1) * gap;
-        startX = (540.0f - total) * 0.5f;
-    }
-
-    Rectangle keyRect(int i) const {
-        int row = i / 7;
-        int col = i % 7;
-        return { 29.0f + col * 70.0f, 728.0f + row * 74.0f, 62.0f, 64.0f };
-    }
-
-    void drawPause() {
-        Vector2 c{ 45.0f, 49.0f };
-        DrawCircleV({ c.x, c.y + 3.0f }, 28.0f, Theme::WithAlpha(BLACK, 0.35f));
-        DrawCircleGradient((int)c.x, (int)c.y, 28.0f, Color{ 96, 165, 250, 255 }, Color{ 37, 99, 235, 255 });
-        DrawCircleLines((int)c.x, (int)c.y, 28.0f, Color{ 147, 197, 253, 255 });
-        DrawCircleSector({ c.x, c.y - 2.0f }, 23.0f, 200.0f, 340.0f, 16, Theme::WithAlpha(WHITE, 0.22f));
-        UI::PauseIcon(c, 13.0f, WHITE);
-    }
-
-    void drawRobotAndBubble() {
-        Art::RobotMascot({ 482.0f, 218.0f }, 0.98f, time);
-        Rectangle b{ 318.0f, 105.0f, 106.0f, 62.0f };
-        Vector2 mouse = Input::Mouse();
-        bool hover = CheckCollisionPointRec(mouse, b);
-        UI::DropShadow(b, 16.0f, 4.0f, 0.30f, 1.0f);
-        UI::GradientRound(b, 16.0f, WHITE, Color{ 226, 232, 240, 255 });
-        DrawRectangleRoundedLines(b, UI::Roundness(b, 16.0f), 12, 2.0f, Color{ 203, 213, 225, 255 });
-        // tail
-        DrawTriangle({ b.x + b.width - 1.0f, b.y + 28.0f }, { b.x + b.width + 18.0f, b.y + 36.0f },
-                     { b.x + b.width - 1.0f, b.y + 44.0f }, Color{ 241, 245, 249, 255 });
-        Theme::text3D(Theme::fontCartoon, "NEED A", { b.x + b.width * 0.5f, b.y + 19.0f }, 14.0f,
-                      Theme::ink, Color{ 148, 163, 184, 255 }, 0.8f, Theme::WithAlpha(BLACK, 0.25f), true, true);
-        Theme::text3D(Theme::fontCartoon, "HINT?", { b.x + b.width * 0.5f, b.y + 40.0f }, 15.0f,
-                      Theme::ink, Color{ 148, 163, 184, 255 }, 0.8f, Theme::WithAlpha(BLACK, 0.25f), true, true);
-        // hint counter badge
-        DrawCircleV({ b.x + b.width - 3.0f, b.y - 3.0f }, 13.0f, Color{ 239, 68, 68, 255 });
-        DrawCircleLines((int)(b.x + b.width - 3.0f), (int)(b.y - 3.0f), 13.0f, Theme::WithAlpha(WHITE, 0.8f));
-        Theme::text3D(Theme::fontCartoon, "x" + std::to_string(hintsRemaining),
-                      { b.x + b.width - 3.0f, b.y - 2.0f }, 12.0f, WHITE,
-                      Color{ 127, 29, 29, 255 }, 1.0f, Theme::WithAlpha(BLACK, 0.5f), true, true);
-        if (hover) {
-            DrawRectangleRoundedLines({ b.x - 2.0f, b.y - 2.0f, b.width + 4.0f, b.height + 4.0f },
-                                      UI::Roundness(b, 18.0f), 12, 2.0f, Theme::WithAlpha(Theme::gold, 0.8f));
-        }
-        if (hintToastTimer > 0.0f) {
-            float a = std::min(1.0f, hintToastTimer / 0.35f);
-            Rectangle t{ 276.0f, 174.0f, 250.0f, 52.0f };
-            DrawRectangleRounded(t, 0.35f, 12, Theme::WithAlpha(Color{ 15, 23, 42, 242 }, a));
-            DrawRectangleRoundedLines(t, 0.35f, 12, 1.6f, Theme::WithAlpha(Theme::gold, a * 0.8f));
-            UI::TextArabic(hintToastText, { t.x + t.width * 0.5f, t.y + t.height * 0.5f }, 20.0f,
-                           Theme::WithAlpha(Theme::goldLight, a), true, true);
-        }
-    }
-
-    void drawSlots() {
-        float slotW, gap, total, startX;
-        computeSlots(slotW, gap, total, startX);
-        for (size_t i = 0; i < targetWord.size(); ++i) {
-            Rectangle s{ startX + (float)i * (slotW + gap), 618.0f, slotW, 64.0f };
-            std::string letter = (i < currentGuess.size()) ? std::string(1, currentGuess[i]) : "";
-            bool cursor = (i == currentGuess.size());
-            bool underscore = (i < 2 && i >= currentGuess.size());
-            UI::drawDashedRoundedSlot(s, letter, cursor, underscore);
-        }
-    }
-
-    void drawKeyboard() {
-        // bottom console
-        DrawRectangleGradientV(0, 710, 540, 250, Theme::WithAlpha(Color{ 19, 34, 64, 255 }, 0.96f),
-                               Color{ 12, 21, 44, 255 });
-        DrawLineEx({ 0, 711 }, { 540, 711 }, 2.0f, Theme::WithAlpha(Color{ 96, 165, 250, 255 }, 0.35f));
-        DrawLineEx({ 0, 713 }, { 540, 713 }, 1.0f, Theme::WithAlpha(BLACK, 0.4f));
-        Theme::text3D(Theme::fontCartoon, "TAP THE KEYS TO SPELL",
-                      { 270.0f, 720.0f }, 11.0f, Theme::goldLight,
-                      Color{ 76, 40, 20, 255 }, 1.0f, Theme::WithAlpha(BLACK, 0.5f), true, true);
-        Vector2 mouse = Input::Mouse();
-        for (int i = 0; i < (int)keys.size(); ++i) {
-            Rectangle r = keyRect(i);
-            bool used = keyUsed[i];
-            bool hover = !used && CheckCollisionPointRec(mouse, r);
-            if (used) {
-                // recessed, disabled key
-                DrawRectangleRounded({ r.x, r.y + 2.0f, r.width, r.height }, 0.22f, 8, Theme::WithAlpha(BLACK, 0.35f));
-                DrawRectangleRounded(r, 0.22f, 8, Color{ 30, 41, 59, 255 });
-                DrawRectangleRoundedLines(r, 0.22f, 8, 1.2f, Theme::WithAlpha(Color{ 71, 85, 105, 255 }, 0.7f));
-                DrawRectangleRounded({ r.x + 4.0f, r.y + 3.0f, r.width - 8.0f, r.height * 0.25f }, 0.4f, 6,
-                                     Theme::WithAlpha(WHITE, 0.04f));
-            } else {
-                UI::drawCreamKeyboardTile(r, std::string(1, keys[i]), hover, false);
+        float slotSz = std::min(58.0f, 460.0f / std::max(1, n));
+        float totalW = n * (slotSz + 6.0f) - 6.0f;
+        float startX = 270.0f - totalW * 0.5f;
+        for (int i = 0; i < n; ++i) {
+            Rectangle sRec{ startX + i * (slotSz + 6.0f), 618.0f, slotSz, slotSz };
+            UI::GradientRound(sRec, 14.0f, Color{ 11, 19, 36, 255 }, Color{ 23, 37, 84, 255 });
+            DrawRectangleRoundedLines(sRec, 0.25f, 6, 2.5f, WHITE);
+            if (i < (int)currentGuess.size()) {
+                std::string k = std::string("word_graduate_victory_ui_kit/letter_tiles_a_z/tile_") + currentGuess[i] + ".png";
+                UIAssets::drawFit(k, sRec);
             }
         }
 
-        // shuffle
-        Vector2 sc{ 70.0f, 902.0f };
-        UI::ShuffleIcon(sc, 18.0f, Theme::goldLight);
-        Theme::text3D(Theme::fontCartoon, "SHUFFLE", { sc.x, sc.y + 32.0f }, 13.0f,
-                      Theme::goldLight, Color{ 120, 60, 25, 255 }, 1.2f, Theme::WithAlpha(BLACK, 0.6f), true, true);
+        // 6. 2x7 3D Cream Keyboard Tiles + Shuffle & Skip Buttons
+        for (int i = 0; i < 14 && i < (int)keys.size(); ++i) {
+            if (keyUsed[i]) continue;
+            int r = i / 7;
+            int c = i % 7;
+            Rectangle kRec{ 24.0f + c * 71.0f, 730.0f + r * 74.0f, 64.0f, 64.0f };
+            std::string tileKey = std::string("word_graduate_victory_ui_kit/letter_tiles_a_z/tile_") + keys[i] + ".png";
+            if (!UIAssets::drawFit(tileKey, kRec)) {
+                UI::GradientRound(kRec, 14.0f, Color{ 255, 253, 245, 255 }, Color{ 254, 240, 138, 255 });
+                Theme::text3D(std::string(1, keys[i]), { kRec.x + 32.0f, kRec.y + 32.0f }, 26, Color{ 15, 23, 42, 255 }, WHITE, 1.5f, BLANK, true, true);
+            }
+        }
 
-        // delete / backspace
-        Rectangle del{ 286.0f, 884.0f, 52.0f, 52.0f };
-        bool delHover = CheckCollisionPointRec(mouse, del);
-        UI::IconButton3D(del, Color{ 248, 113, 113, 255 }, Color{ 185, 28, 28, 255 },
-                         Color{ 254, 202, 202, 255 }, delHover);
-        Vector2 dc{ del.x + 26.0f, del.y + 26.0f };
-        DrawLineEx({ dc.x - 12.0f, dc.y }, { dc.x + 13.0f, dc.y }, 3.2f, WHITE);
-        DrawTriangle({ dc.x - 16.0f, dc.y }, { dc.x - 6.0f, dc.y - 7.0f }, { dc.x - 6.0f, dc.y + 7.0f }, WHITE);
-        DrawLineEx({ dc.x + 6.0f, dc.y - 8.0f }, { dc.x + 12.0f, dc.y + 8.0f }, 2.4f, WHITE);
-        DrawLineEx({ dc.x + 12.0f, dc.y - 8.0f }, { dc.x + 6.0f, dc.y + 8.0f }, 2.4f, WHITE);
-
-        // skip
-        Rectangle skip{ 372.0f, 885.0f, 145.0f, 56.0f };
-        bool sh = CheckCollisionPointRec(mouse, skip);
-        UI::DropShadow(skip, 24.0f, 5.0f, 0.4f, 1.0f);
-        UI::GradientRound({ skip.x, skip.y + 4.0f, skip.width, skip.height }, 24.0f,
-                          Color{ 180, 30, 30, 255 }, Color{ 127, 29, 29, 255 });
-        UI::GradientRound(skip, 24.0f, sh ? Color{ 251, 146, 60, 255 } : Color{ 249, 115, 22, 255 },
-                          Color{ 239, 68, 68, 255 });
-        DrawRectangleRoundedLines(skip, UI::Roundness(skip, 24.0f), 16, 2.0f, Theme::goldLight);
-        DrawRectangleRounded({ skip.x + 8.0f, skip.y + 4.0f, skip.width - 16.0f, 18.0f }, 0.7f, 8,
-                             Theme::WithAlpha(WHITE, 0.18f));
-        Theme::text3D(Theme::fontCartoon, "SKIP  >>|", { skip.x + skip.width * 0.5f, skip.y + 28.0f }, 21.0f,
-                      WHITE, Color{ 153, 27, 27, 255 }, 1.8f, Theme::WithAlpha(BLACK, 0.45f), true, true);
-    }
-
-    void draw(int screenW, int screenH) {
-        float sx = 0.0f;
-        if (wrongFlash) sx = std::sin(time * 55.0f) * shake;
-        Art::AcademicPattern(screenW, screenH);
-        drawPause();
-        UI::drawPencilProgressBar({ 128.0f, 27.0f, 268.0f, 38.0f }, currentLevelIdx + 1,
-                                  std::max(1, gGameData.levelCount()));
-        UI::CoinsBadge({ 422.0f, 24.0f }, 350, 102.0f, 40.0f);
-
-        BeginScissorMode((int)sx, 0, screenW, screenH);
-        drawRobotAndBubble();
-        Art::AcademicFrame({ 82.0f, 178.0f, 376.0f, 392.0f }, clueTexture);
-        drawSlots();
-        EndScissorMode();
-
-        drawKeyboard();
-        Theme::drawParticles();
+        UI::GradientRound({ 372, 885, 145, 56 }, 20.0f, Color{ 251, 146, 60, 255 }, Color{ 239, 68, 68, 255 });
+        Theme::text3D("SKIP >>|", { 444, 913 }, 20, WHITE, BLACK, 2.5f, BLACK, true, true);
 
         if (victoryModal.active) {
-            bool n = false, m = false;
-            victoryModal.draw(gGameData.levels[currentLevelIdx], screenW, screenH, n, m);
+            victoryModal.draw(w, h);
         }
-    }
-
-    void update(float dt) {
-        time += dt;
-        if (hintToastTimer > 0.0f) hintToastTimer -= dt;
-        if (wrongFlash) {
-            wrongTimer -= dt;
-            shake *= 0.90f;
-            if (wrongTimer <= 0.0f) clearWrong();
-        }
-        if (victoryModal.active) victoryModal.update(dt);
     }
 };

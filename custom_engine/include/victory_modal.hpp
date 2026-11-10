@@ -1,10 +1,13 @@
 #pragma once
+
 #include "raylib.h"
-#include "input.hpp"
 #include "audio_manager.hpp"
 #include "game_data.hpp"
+#include "input.hpp"
 #include "theme.hpp"
+#include "ui_asset_pack.hpp"
 #include "ui_widgets.hpp"
+#include "word_card_modal.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -16,174 +19,145 @@ public:
     float anim = 0.0f;
     bool nextClicked = false;
     bool mapClicked = false;
+    WordData currentWord;
+    WordCardModal wordCardModal;
 
-    void init() {}
+    void init() {
+        wordCardModal.init();
+    }
+
     void show(const WordData& word) {
-        (void)word;
+        currentWord = word;
         active = true;
         anim = 0.0f;
-        Theme::spawnCelebration({ 270.0f, 420.0f }, 64);
+        nextClicked = false;
+        mapClicked = false;
+        wordCardModal.hide();
+        Theme::coins += 50;
+        gAudio.playFanfare();
+        Theme::spawnCelebration({ 270.0f, 320.0f }, 80);
     }
-    void hide() { active = false; }
+
+    void hide() {
+        active = false;
+        wordCardModal.hide();
+    }
 
     void update(float dt) {
-        if (active) anim += dt;
-    }
-
-    void handleInput(int screenW, int screenH, bool& next_clicked, bool& map_clicked) {
-        next_clicked = false;
-        map_clicked = false;
         if (!active) return;
-        float card_w = 486.0f;
-        float card_h = 602.0f;
-        float card_x = (screenW - card_w) * 0.5f;
-        float card_y = (screenH - card_h) * 0.5f;
-        Rectangle mapBtn{ card_x + 26.0f, card_y + card_h - 78.0f, 202.0f, 54.0f };
-        Rectangle nextBtn{ card_x + card_w - 228.0f, card_y + card_h - 78.0f, 202.0f, 54.0f };
-        if (!IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) return;
-        Vector2 mouse = Input::Mouse();
-        if (CheckCollisionPointRec(mouse, mapBtn)) {
-            gAudio.playClick();
-            map_clicked = true;
-            active = false;
-        } else if (CheckCollisionPointRec(mouse, nextBtn)) {
-            gAudio.playClick();
-            int nextLevel = gGameData.current_level + 1;
-            if (nextLevel < gGameData.levelCount()) {
-                next_clicked = true;
-                gGameData.current_level = nextLevel;
-            } else {
-                // "FINISH" on the last level returns to the island map.
-                map_clicked = true;
+        anim = std::min(1.0f, anim + dt * 3.2f);
+        nextClicked = false;
+        mapClicked = false;
+
+        if (wordCardModal.active) {
+            wordCardModal.update(dt);
+            return;
+        }
+
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            Vector2 m = Input::Mouse();
+            Rectangle nextRec{ 170, 770, 290, 82 };
+            Rectangle replayRec{ 72, 772, 82, 82 };
+            Rectangle cardBtnRec{ 130, 695, 280, 56 };
+            Rectangle mascotRec{ 170, 410, 200, 210 };
+
+            if (CheckCollisionPointRec(m, nextRec)) {
+                gAudio.playClick();
+                nextClicked = true;
+            } else if (CheckCollisionPointRec(m, replayRec)) {
+                gAudio.playClick();
+                mapClicked = true;
+            } else if (CheckCollisionPointRec(m, cardBtnRec)) {
+                wordCardModal.show(currentWord);
+            } else if (CheckCollisionPointRec(m, mascotRec)) {
+                gAudio.playChime();
+                Theme::spawnCelebration({ 270.0f, 470.0f }, 48);
             }
-            active = false;
         }
     }
 
-    float fitArabic(const std::string& raw, float size, float maxWidth) {
-        std::string shaped = Theme::shapeArabic(raw);
-        float w = MeasureTextEx(Theme::fontArabic, shaped.c_str(), size, 0.0f).x;
-        while (w > maxWidth && size > 18.0f) {
-            size -= 1.0f;
-            w = MeasureTextEx(Theme::fontArabic, shaped.c_str(), size, 0.0f).x;
-        }
-        return size;
-    }
-
-    void draw(const LevelInfo& lvl, int screenW, int screenH, bool& next_clicked, bool& map_clicked) {
+    void draw(int w, int h) {
         if (!active) return;
-        next_clicked = false;
-        map_clicked = false;
 
-        float t = std::min(1.0f, anim / 0.28f);
-        float ease = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);
-        float card_w = 486.0f;
-        float card_h = 602.0f;
-        float card_x = (screenW - card_w) * 0.5f;
-        float card_y = (screenH - card_h) * 0.5f + (1.0f - ease) * 26.0f;
-
-        DrawRectangle(0, 0, screenW, screenH, Theme::WithAlpha(Color{ 4, 8, 20, 255 }, 0.72f * ease));
-
-        // radial light rays behind the card
-        Vector2 center{ (float)screenW * 0.5f, card_y + 130.0f };
-        for (int i = 0; i < 12; ++i) {
-            float a = (float)i * PI / 6.0f + anim * 0.08f;
-            Vector2 p1{ center.x + std::cos(a - 0.05f) * 700.0f, center.y + std::sin(a - 0.05f) * 700.0f };
-            Vector2 p2{ center.x + std::cos(a + 0.05f) * 700.0f, center.y + std::sin(a + 0.05f) * 700.0f };
-            DrawTriangle(center, p1, p2, Theme::WithAlpha(Theme::gold, 0.035f * ease));
+        // 1. Blurred Board Backdrop + Dark Overlay
+        if (!UIAssets::drawStretch("word_graduate_victory_ui_kit/ui_components/bg_blurred_word_board.png",
+                                   Rectangle{ 0, 0, (float)w, (float)h },
+                                   Color{ 255, 255, 255, (unsigned char)(220 * anim) })) {
+            DrawRectangle(0, 0, w, h, Color{ 8, 12, 26, (unsigned char)(210 * anim) });
+        } else {
+            DrawRectangle(0, 0, w, h, Color{ 8, 12, 26, (unsigned char)(115 * anim) });
         }
 
-        UI::DropShadow({ card_x, card_y, card_w, card_h }, 28.0f, 12.0f, 0.55f, 4.0f);
-        // gold frame + dark glass body
-        UI::GradientRound({ card_x, card_y + 7.0f, card_w, card_h }, 28.0f,
-                          Color{ 180, 83, 9, 255 }, Color{ 120, 53, 15, 255 });
-        UI::GradientRound({ card_x, card_y, card_w, card_h }, 28.0f,
-                          Color{ 251, 191, 36, 255 }, Color{ 217, 119, 6, 255 });
-        Rectangle inner{ card_x + 5.0f, card_y + 5.0f, card_w - 10.0f, card_h - 10.0f };
-        UI::GradientRound(inner, 24.0f, Color{ 28, 42, 72, 255 }, Color{ 10, 17, 34, 255 });
-        DrawRectangleRoundedLines(inner, UI::Roundness(inner, 24.0f), 16, 2.0f, Theme::WithAlpha(Theme::goldLight, 0.9f));
-        DrawRectangleRoundedLines({ card_x - 1.0f, card_y - 1.0f, card_w + 2.0f, card_h + 2.0f },
-                                  UI::Roundness({ 0, 0, card_w, card_h }, 28.0f), 16, 1.4f,
-                                  Theme::WithAlpha(WHITE, 0.55f));
-
-        // header ribbon
-        Rectangle ribbon{ card_x + 26.0f, card_y + 18.0f, card_w - 52.0f, 46.0f };
-        UI::GradientRound(ribbon, 16.0f, Color{ 250, 204, 21, 255 }, Color{ 234, 130, 20, 255 });
-        DrawRectangleRoundedLines(ribbon, UI::Roundness(ribbon, 16.0f), 12, 1.8f, Color{ 146, 64, 14, 255 });
-        Theme::text3D(Theme::fontCartoon, "STAGE COMPLETED!", { card_x + card_w * 0.5f, ribbon.y + 23.0f },
-                      26.0f, WHITE, Color{ 146, 64, 14, 255 }, 2.2f, Theme::WithAlpha(BLACK, 0.5f), true, true);
-
-        // stars pop in
-        for (int s = -1; s <= 1; ++s) {
-            float local = std::clamp((anim - 0.12f - (s + 1) * 0.08f) / 0.25f, 0.0f, 1.0f);
-            float sc = 0.5f + 0.5f * local;
-            float bounce = std::sin(local * PI) * 6.0f;
-            Vector2 sp{ card_x + card_w * 0.5f + s * 66.0f, card_y + 104.0f - bounce };
-            UI::Star5(sp, 30.0f * sc, 13.0f * sc, Theme::gold, Color{ 146, 64, 14, 255 }, true);
-            UI::Sparkle({ sp.x - 12.0f, sp.y - 9.0f }, 6.0f * sc, Theme::WithAlpha(WHITE, 0.9f));
+        // 2. Main Modal Card Container
+        Rectangle modalRec{ 28, 70, 484, 820 };
+        if (!UIAssets::drawFit("word_graduate_victory_ui_kit/ui_components/scene_base_without_mascot.png", modalRec)) {
+            UIAssets::drawFit("word_graduate_victory_ui_kit/ui_components/modal_victory_card_full.png", modalRec);
         }
 
-        // solved word
-        Theme::text3D(Theme::fontCartoon, lvl.data.word, { card_x + card_w * 0.5f, card_y + 168.0f },
-                      40.0f, WHITE, Color{ 15, 23, 42, 255 }, 2.6f, Theme::WithAlpha(BLACK, 0.6f), true, true);
+        // 3. Top Header "LEVEL COMPLETE!" & 3 Golden Stars with Pulse
+        Rectangle headerRec{ 65, 58, 410, 105 };
+        UIAssets::drawFit("word_graduate_victory_ui_kit/ui_components/header_level_complete.png", headerRec);
 
-        // Arabic translation card (the pedagogical heart of the game)
-        Rectangle ar{ card_x + 24.0f, card_y + 204.0f, card_w - 48.0f, 96.0f };
-        UI::DropShadow(ar, 18.0f, 4.0f, 0.35f, 1.0f);
-        UI::GradientRound({ ar.x, ar.y + 4.0f, ar.width, ar.height }, 18.0f, Color{ 20, 83, 45, 255 }, Color{ 6, 78, 59, 255 });
-        UI::GradientRound(ar, 18.0f, Color{ 74, 222, 128, 255 }, Color{ 22, 163, 74, 255 });
-        DrawRectangleRoundedLines(ar, UI::Roundness(ar, 18.0f), 14, 2.2f, Color{ 187, 247, 208, 255 });
-        DrawRectangleRounded({ ar.x + 8.0f, ar.y + 5.0f, ar.width - 16.0f, 26.0f }, 0.6f, 8,
-                             Theme::WithAlpha(WHITE, 0.12f));
-        UI::TextArabic("الترجمة العربية", { ar.x + ar.width - 82.0f, ar.y + 19.0f }, 17.0f,
-                       Color{ 220, 252, 231, 255 }, true, true);
-        float arSize = fitArabic(lvl.data.translation_ar, 40.0f, ar.width - 40.0f);
-        UI::TextArabic(lvl.data.translation_ar, { ar.x + ar.width * 0.5f, ar.y + 56.0f }, arSize,
-                       Color{ 254, 249, 195, 255 }, true, true, Color{ 6, 78, 59, 255 }, 1.4f);
-        DrawLineEx({ ar.x + 24.0f, ar.y + 82.0f }, { ar.x + ar.width - 24.0f, ar.y + 82.0f }, 1.0f,
-                   Theme::WithAlpha(WHITE, 0.18f));
+        float starPulse = 1.0f + 0.06f * std::sin(Theme::timeNow * 4.5f);
+        UIAssets::drawCentered("word_graduate_victory_ui_kit/rewards_and_stars/three_golden_stars.png",
+                               { 270, 188 }, 280 * starPulse, 110 * starPulse);
 
-        // bac data card
-        Rectangle bac{ card_x + 24.0f, card_y + 312.0f, card_w - 48.0f, 180.0f };
-        UI::GlassPanel(bac, 16.0f, Color{ 22, 34, 58, 230 }, Theme::WithAlpha(Color{ 96, 165, 250, 255 }, 0.5f));
-        Theme::text3D(Theme::fontCartoon, "BAC EXAM DEFINITION & SYNONYM",
-                      { bac.x + 16.0f, bac.y + 14.0f }, 13.0f, Color{ 251, 191, 36, 255 },
-                      Color{ 76, 40, 20, 255 }, 1.0f, Theme::WithAlpha(BLACK, 0.45f));
+        // 4. Ribbon Banner ("EXCELLENT!")
+        Rectangle ribbonRec{ 110, 238, 320, 68 };
+        UIAssets::drawFit("word_graduate_victory_ui_kit/ui_components/ribbon_excellent_banner.png", ribbonRec);
 
-        auto defLines = UI::WrapText("Definition: " + lvl.data.definition_en, 14.0f, bac.width - 32.0f);
-        float yy = bac.y + 38.0f;
-        for (const auto& line : defLines) {
-            Theme::text(line, { bac.x + 16.0f, yy }, 14.0f, Color{ 241, 245, 249, 255 });
-            yy += 18.0f;
+        // 5. Solved English Word rendered with 3D Victory Alphabet Tiles (A-Z)
+        UIAssets::drawWordTiles("word_graduate_victory_ui_kit/letter_tiles_a_z/tile_",
+                                currentWord.word.empty() ? "GRADUATE" : currentWord.word,
+                                { 270, 325 }, 420.0f, 52.0f, 4.0f);
+
+        // 6. Arabic Translation Badge (Shaped RTL Arabic via Cairo.ttf)
+        Rectangle arBadge{ 76, 362, 388, 56 };
+        UI::GradientRound(arBadge, 18.0f, Color{ 15, 23, 42, 235 }, Color{ 30, 58, 138, 235 });
+        UI::Rim(arBadge, 18.0f, Color{ 250, 204, 21, 255 }, Color{ 254, 240, 138, 255 }, Color{ 180, 83, 9, 255 });
+        Theme::textArabic(currentWord.translation_ar.empty() ? "خريج / إتمام المرحلة بنجاح" : currentWord.translation_ar,
+                          { 270, 390 }, 28, Color{ 254, 240, 138, 255 }, true, true, BLACK, 2.0f);
+
+        // 7. Animated Graduate Mascot + Floating Graduation Cap + Floating Rewards
+        float bounceY = std::abs(std::sin(Theme::timeNow * 4.2f)) * -14.0f;
+        float capLagY = std::sin(Theme::timeNow * 4.2f - 0.55f) * 10.0f - 8.0f;
+        bool sparklePose = ((int)(Theme::timeNow * 2.5f) % 2) == 1;
+
+        std::string bodyKey = sparklePose
+            ? "word_graduate_victory_ui_kit/mascot_layers/mascot_body_sparkle_aligned.png"
+            : "word_graduate_victory_ui_kit/mascot_layers/mascot_body_cheer_aligned.png";
+        UIAssets::drawCentered(bodyKey, { 270, 528 + bounceY }, 195, 195);
+        UIAssets::drawCentered("word_graduate_victory_ui_kit/mascot_layers/graduation_cap_cropped.png",
+                               { 270, 426 + bounceY + capLagY }, 135, 78,
+                               std::sin(Theme::timeNow * 3.0f) * 4.5f);
+
+        // Floating Coins & Magic XP Potion
+        float floatL = std::sin(Theme::timeNow * 3.0f) * 6.0f;
+        float floatR = std::cos(Theme::timeNow * 3.0f) * 6.0f;
+        UIAssets::drawCentered("word_graduate_victory_ui_kit/rewards_and_stars/reward_coins_stack.png",
+                               { 108, 545 + floatL }, 88, 88);
+        Theme::text3D("+50", { 108, 598 + floatL }, 22, Color{ 253, 224, 71, 255 }, BLACK, 2.5f, BLACK, true, true);
+
+        UIAssets::drawCentered("word_graduate_victory_ui_kit/rewards_and_stars/reward_magic_xp_potion.png",
+                               { 432, 545 + floatR }, 88, 88);
+        Theme::text3D("+25 XP", { 432, 598 + floatR }, 20, Color{ 103, 232, 249, 255 }, BLACK, 2.5f, BLACK, true, true);
+
+        // 8. Open Word Flashcard Button ("بطاقة الكلمة التفصيلية")
+        Rectangle cardBtnRec{ 130, 695, 280, 56 };
+        UI::GradientRound(cardBtnRec, 18.0f, Color{ 245, 158, 11, 255 }, Color{ 217, 119, 6, 255 });
+        UI::Rim(cardBtnRec, 18.0f, Color{ 120, 53, 15, 255 }, Color{ 254, 243, 199, 255 }, Color{ 180, 83, 9, 255 });
+        Theme::textArabic("بطاقة الكلمة والمرادفات (WORD CARD)", { 270, 723 }, 21, WHITE, true, true, BLACK, 2.0f);
+
+        // 9. Replay / Map Circle Button & Next Level CTA Button
+        Rectangle replayRec{ 72, 772, 82, 82 };
+        Rectangle nextRec{ 170, 770, 290, 82 };
+        UIAssets::drawFit("word_graduate_victory_ui_kit/ui_components/btn_replay_circle.png", replayRec);
+        UIAssets::drawFit("word_graduate_victory_ui_kit/ui_components/btn_next_level_cta.png", nextRec);
+
+        Theme::drawParticles();
+
+        if (wordCardModal.active) {
+            wordCardModal.draw(w, h);
         }
-        Theme::text("Synonyms: " + lvl.data.synonym_en, { bac.x + 16.0f, yy + 4.0f }, 14.0f,
-                    Color{ 134, 239, 172, 255 });
-        Theme::text(gGameData.macronFrequencyEn(lvl.data.frequency), { bac.x + 16.0f, yy + 26.0f }, 13.0f,
-                    Theme::WithAlpha(WHITE, 0.8f));
-        std::string freqAr = gGameData.macronFrequencyAr(lvl.data.frequency);
-        float freqSize = fitArabic(freqAr, 19.0f, bac.width - 40.0f);
-        UI::TextArabic(freqAr, { bac.x + bac.width * 0.5f, bac.y + bac.height - 23.0f }, freqSize,
-                       Color{ 253, 224, 71, 255 }, true, true);
-
-        // buttons
-        Vector2 mouse = Input::Mouse();
-        Rectangle mapBtn{ card_x + 26.0f, card_y + card_h - 78.0f, 202.0f, 54.0f };
-        Rectangle nextBtn{ card_x + card_w - 228.0f, card_y + card_h - 78.0f, 202.0f, 54.0f };
-        bool mh = CheckCollisionPointRec(mouse, mapBtn);
-        bool nh = CheckCollisionPointRec(mouse, nextBtn);
-        UI::Button3D(mapBtn, "ISLAND MAP", Color{ 96, 165, 250, 255 }, Color{ 37, 99, 235, 255 },
-                     Color{ 30, 58, 138, 255 }, Color{ 191, 219, 254, 255 }, 18.0f, WHITE, mh);
-        int nextLevel = lvl.global_index + 1;
-        std::string nextLabel = (nextLevel < gGameData.levelCount()) ? "NEXT LEVEL" : "FINISH";
-        UI::Button3D(nextBtn, nextLabel, Color{ 74, 222, 128, 255 }, Color{ 22, 163, 74, 255 },
-                     Color{ 20, 83, 45, 255 }, Color{ 187, 247, 208, 255 }, 18.0f, WHITE, nh);
-        // arrows
-        DrawLineEx({ nextBtn.x + nextBtn.width - 34.0f, nextBtn.y + 22.0f },
-                   { nextBtn.x + nextBtn.width - 24.0f, nextBtn.y + 27.0f }, 2.5f, WHITE);
-        DrawLineEx({ nextBtn.x + nextBtn.width - 24.0f, nextBtn.y + 27.0f },
-                   { nextBtn.x + nextBtn.width - 34.0f, nextBtn.y + 32.0f }, 2.5f, WHITE);
-
-        (void)mh;
-        (void)nh;
     }
 };

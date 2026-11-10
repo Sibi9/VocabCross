@@ -1,14 +1,17 @@
 #pragma once
+
 #include "raylib.h"
-#include "input.hpp"
 #include "audio_manager.hpp"
 #include "decor_art.hpp"
 #include "game_data.hpp"
+#include "input.hpp"
 #include "theme.hpp"
+#include "ui_asset_pack.hpp"
 #include "ui_widgets.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -26,494 +29,350 @@ public:
         bool hasSign = false;
     };
 
-    int unit = 0;
-    float time = 0.0f;
-    bool selectorOpen = false;
-    bool settingsOpen = false;
-    bool verifyAllUnlocked = false;
-    float toastTimer = 0.0f;
-    std::string toast;
+    int unit = 0; // 0=Ethics, 1=Safety First, 2=Astronomy/Space, 3=Graduation Academy (Scrolls 1-14)
+    float scrollY = 0.0f;
+    float targetScrollY = 0.0f;
+    int selectedLevel = -1;
+    int pendingNavScreen = -1; // For switching to Home, Shop, Streak
+    std::vector<UnitNodes> units;
 
-    Texture2D cleanBg[3]{};
-    std::vector<UnitNodes> unitNodes;
-    Vector2 lastMouse{};
+    // Graduation Academy Boy march state along scrolls 1 -> 14
+    int boyTargetScroll = 4;
+    float boyProgress = 3.0f; // 0-based index along the 14 scrolls
+    bool boyMarching = false;
 
     void init() {
-        cleanBg[0] = LoadTexture("assets/scenery/clean_ethics.png");
-        cleanBg[1] = LoadTexture("assets/scenery/clean_safety.png");
-        cleanBg[2] = LoadTexture("assets/scenery/clean_space.png");
-        for (int i = 0; i < 3; ++i) SetTextureFilter(cleanBg[i], TEXTURE_FILTER_BILINEAR);
+        units.resize(4);
 
-        unitNodes.resize(4);
-        // Ethics island: 8 reference nodes + 2 upper temple nodes for the 10 levels.
-        unitNodes[0].nodes = {
-            { 270, 768, 1 }, { 348, 742, 2 }, { 384, 680, 3 }, { 338, 618, 4 }, { 280, 590, 5 },
-            { 228, 548, 6 }, { 318, 468, 7 }, { 262, 420, 8 }, { 250, 365, 9 }, { 286, 335, 10 },
+        // Unit 0: Ethics Island (10 nodes)
+        units[0].nodes = {
+            { 270, 760, 1 }, { 215, 712, 2 }, { 195, 655, 3 }, { 248, 608, 4 }, { 315, 568, 5 },
+            { 330, 512, 6 }, { 268, 472, 7 }, { 212, 430, 8 }, { 248, 382, 9 }, { 275, 330, 10 }
         };
-        unitNodes[0].hasSign = true;
-        unitNodes[0].signX = 158; unitNodes[0].signY = 822; unitNodes[0].signW = 244; unitNodes[0].signH = 108;
+        units[0].hasSign = true;
+        units[0].signX = 160; units[0].signY = 820; units[0].signW = 220; units[0].signH = 110;
 
-        // Safety island has 8 curriculum levels (the plan's Unit 2 count).
-        unitNodes[1].nodes = {
-            { 267, 858, 1 }, { 363, 787, 2 }, { 339, 713, 3 }, { 330, 640, 4 },
-            { 247, 590, 5 }, { 217, 530, 6 }, { 238, 462, 7 }, { 278, 408, 8 },
+        // Unit 1: Safety First / Food Pyramid Island (10 nodes)
+        units[1].nodes = {
+            { 268, 855, 1 }, { 218, 795, 2 }, { 292, 738, 3 }, { 235, 675, 4 }, { 295, 612, 5 },
+            { 230, 548, 6 }, { 285, 482, 7 }, { 235, 415, 8 }, { 280, 342, 9 }, { 268, 260, 10 }
         };
-        unitNodes[1].hasSign = false;
 
-        // Space island: 7 reference nodes + node 08 on the launch platform.
-        unitNodes[2].nodes = {
-            { 268, 835, 1 }, { 160, 712, 2 }, { 270, 615, 3 }, { 370, 538, 4 },
-            { 396, 438, 5 }, { 309, 398, 6 }, { 232, 318, 7 }, { 296, 280, 8 },
+        // Unit 2: Space / Astronomy Observatory Island (10 nodes)
+        units[2].nodes = {
+            { 270, 825, 1 }, { 340, 760, 2 }, { 225, 705, 3 }, { 188, 635, 4 }, { 285, 575, 5 },
+            { 355, 505, 6 }, { 255, 445, 7 }, { 195, 385, 8 }, { 255, 325, 9 }, { 235, 265, 10 }
         };
-        unitNodes[2].hasSign = false;
 
-        // Emotions island (original, procedural scene).
-        unitNodes[3].nodes = {
-            { 270, 815, 1 }, { 330, 760, 2 }, { 320, 685, 3 }, { 240, 625, 4 }, { 205, 545, 5 }, { 270, 480, 6 },
+        // Unit 3: Graduation Academy Map (14 Numbered Scrolls + Telegrams reaching the Grand Blue Castle)
+        units[3].nodes = {
+            { 165, 845, 1 },
+            { 268, 825, 2 },
+            { 372, 792, 3 },
+            { 312, 738, 4 },
+            { 195, 702, 5 },
+            { 152, 642, 6 },
+            { 248, 598, 7 },
+            { 358, 560, 8 },
+            { 382, 495, 9 },
+            { 282, 452, 10 }, // Entering the Giant Open Book Bridge
+            { 225, 392, 11 }, // Middle of the Giant Open Book Bridge
+            { 278, 338, 12 }, // Upper Book Bridge
+            { 335, 282, 13 }, // Castle Courtyard
+            { 285, 222, 14 }  // Grand Blue Castle Gate!
         };
-        unitNodes[3].hasSign = true;
-        unitNodes[3].signX = 148; unitNodes[3].signY = 840; unitNodes[3].signW = 244; unitNodes[3].signH = 78;
-
-        unit = 0;
-        gGameData.current_level = 0;
-    }
-
-    void unload() {
-        for (int i = 0; i < 3; ++i) {
-            if (cleanBg[i].id > 0) UnloadTexture(cleanBg[i]);
-        }
     }
 
     void setUnit(int u) {
         unit = std::clamp(u, 0, 3);
-        int start = gGameData.unitStart(unit);
-        int best = start;
-        for (int i = start; i < start + gGameData.unitLevelCount(unit); ++i) {
-            if (gGameData.levels[i].unlocked) best = i;
-        }
-        gGameData.current_level = best;
+        selectedLevel = -1;
     }
 
-    int starsInUnit(int u) const {
-        int start = gGameData.unitStart(u);
-        int total = 0;
-        for (int i = start; i < start + gGameData.unitLevelCount(u); ++i) total += gGameData.levels[i].stars;
-        return total;
-    }
+    int update(float dt) {
+        selectedLevel = -1;
+        pendingNavScreen = -1;
 
-    void showToast(const std::string& msg) {
-        toast = msg;
-        toastTimer = 2.2f;
-    }
-
-    void update(float dt) {
-        time += dt;
-        if (toastTimer > 0.0f) toastTimer -= dt;
-    }
-
-    UI::MapNodeStyle styleForUnit() const {
-        UI::MapNodeStyle s;
-        if (unit == 0) {
-            s.faceA = Color{ 56, 189, 248, 255 };
-            s.faceB = Color{ 2, 132, 199, 255 };
-            s.lip = Color{ 3, 105, 161, 255 };
-            s.ring = Color{ 224, 242, 254, 255 };
-        } else if (unit == 1) {
-            s.faceA = Color{ 251, 191, 36, 255 };
-            s.faceB = Color{ 217, 119, 6, 255 };
-            s.lip = Color{ 146, 64, 14, 255 };
-            s.ring = Color{ 254, 243, 199, 255 };
-        } else if (unit == 2) {
-            s.faceA = Color{ 56, 189, 248, 255 };
-            s.faceB = Color{ 2, 132, 199, 255 };
-            s.lip = Color{ 3, 105, 161, 255 };
-            s.ring = Color{ 224, 242, 254, 255 };
-            s.lockedA = Color{ 125, 211, 252, 255 };
-            s.lockedB = Color{ 30, 64, 175, 255 };
-            s.lockBelow = true;
+        // Animate Boy walking along the 14 scrolls toward the Blue Castle
+        if (boyMarching) {
+            boyProgress += dt * 2.2f;
+            if (boyProgress >= 13.0f) {
+                boyProgress = 13.0f;
+                boyMarching = false;
+                gAudio.playFanfare();
+                Theme::spawnCelebration({ 285, 200 }, 64);
+            }
         } else {
-            s.faceA = Color{ 244, 114, 182, 255 };
-            s.faceB = Color{ 190, 24, 93, 255 };
-            s.lip = Color{ 136, 19, 55, 255 };
-            s.ring = Color{ 252, 231, 243, 255 };
-        }
-        return s;
-    }
-
-    bool pointInNode(Vector2 p, const NodeDef& n) const {
-        return CheckCollisionPointCircle(p, { n.x, n.y }, 32.0f);
-    }
-
-    void drawTopChip() {
-        Rectangle chip{ 132.0f, 12.0f, 276.0f, 38.0f };
-        UI::Capsule(chip, Color{ 30, 43, 68, 235 }, Color{ 13, 22, 40, 245 }, Theme::WithAlpha(Theme::gold, 0.85f));
-        Theme::text3D(Theme::fontCartoon, gGameData.islandTitle(unit),
-                      { chip.x + chip.width * 0.5f, chip.y + chip.height * 0.5f + 1.0f }, 15.0f,
-                      Theme::goldLight, Color{ 76, 40, 20, 255 }, 1.4f, Theme::WithAlpha(BLACK, 0.5f), true, true);
-        // chevrons
-        for (int side = -1; side <= 1; side += 2) {
-            Vector2 c{ side < 0 ? chip.x + 18.0f : chip.x + chip.width - 18.0f, chip.y + chip.height * 0.5f };
-            Vector2 p1{ c.x + side * 5.0f, c.y - 7.0f };
-            Vector2 p2{ c.x - side * 4.0f, c.y };
-            Vector2 p3{ c.x + side * 5.0f, c.y + 7.0f };
-            DrawLineEx(p1, p2, 3.0f, Theme::goldLight);
-            DrawLineEx(p2, p3, 3.0f, Theme::goldLight);
-        }
-    }
-
-    void drawSpaceHUD() {
-        Rectangle capsule{ 14.0f, 14.0f, 276.0f, 48.0f };
-        UI::Capsule(capsule, Color{ 30, 43, 68, 245 }, Color{ 12, 20, 38, 250 }, Color{ 96, 165, 250, 220 });
-        Vector2 starC{ 40.0f, 38.0f };
-        UI::Star5(starC, 27.0f, 13.0f, Theme::gold, Color{ 146, 64, 14, 255 }, true);
-        Theme::text3D(Theme::fontCartoon, std::to_string(unit + 1), { starC.x, starC.y + 2.0f }, 24.0f,
-                      WHITE, Color{ 146, 64, 14, 255 }, 1.8f, Theme::WithAlpha(BLACK, 0.5f), true, true);
-        Rectangle track{ 67.0f, 25.0f, 207.0f, 26.0f };
-        DrawRectangleRounded(track, 0.9f, 12, Color{ 15, 23, 42, 255 });
-        int start = gGameData.unitStart(unit);
-        int totalStars = std::max(1, gGameData.unitLevelCount(unit) * 3);
-        float prog = std::clamp((float)starsInUnit(unit) / (float)totalStars, 0.10f, 1.0f);
-        Rectangle fill{ track.x + 2.0f, track.y + 2.0f, (track.width - 4.0f) * prog, track.height - 4.0f };
-        UI::GradientRound(fill, 12.0f, Color{ 125, 211, 252, 255 }, Color{ 14, 165, 233, 255 });
-        DrawRectangleRounded({ fill.x + 3.0f, fill.y + 2.0f, std::max(1.0f, fill.width - 6.0f), fill.height * 0.35f },
-                             0.8f, 6, Theme::WithAlpha(WHITE, 0.4f));
-        (void)start;
-
-        UI::CoinsBadge({ 318.0f, 17.0f }, 300, 140.0f, 42.0f);
-        Rectangle menu{ 476.0f, 13.0f, 48.0f, 48.0f };
-        UI::IconButton3D(menu, Color{ 56, 189, 248, 255 }, Color{ 2, 132, 199, 255 }, Color{ 186, 230, 253, 255 });
-        UI::MenuIcon({ menu.x + 24.0f, menu.y + 24.0f }, 15.0f, WHITE);
-
-        Rectangle gear{ 15.0f, 872.0f, 52.0f, 52.0f };
-        UI::IconButton3D(gear, Color{ 56, 189, 248, 255 }, Color{ 3, 105, 161, 255 }, Color{ 186, 230, 253, 255 });
-        UI::GearIcon({ gear.x + 26.0f, gear.y + 26.0f }, 15.0f, WHITE);
-        Rectangle map{ 473.0f, 872.0f, 52.0f, 52.0f };
-        UI::IconButton3D(map, Color{ 96, 165, 250, 255 }, Color{ 37, 99, 235, 255 }, Color{ 191, 219, 254, 255 });
-        UI::MapPinIcon({ map.x + 26.0f, map.y + 23.0f }, 14.0f, Color{ 239, 68, 68, 255 });
-    }
-
-    void drawBottomButtons() {
-        Rectangle gear{ 15.0f, 894.0f, 50.0f, 50.0f };
-        UI::IconButton3D(gear, Color{ 56, 189, 248, 255 }, Color{ 3, 105, 161, 255 }, Color{ 186, 230, 253, 255 });
-        UI::GearIcon({ gear.x + 25.0f, gear.y + 25.0f }, 14.0f, WHITE);
-
-        Rectangle map{ 475.0f, 894.0f, 50.0f, 50.0f };
-        UI::IconButton3D(map, Color{ 96, 165, 250, 255 }, Color{ 37, 99, 235, 255 }, Color{ 191, 219, 254, 255 });
-        UI::MapPinIcon({ map.x + 25.0f, map.y + 22.0f }, 13.0f, Color{ 239, 68, 68, 255 });
-    }
-
-    void drawSigns() {
-        if (!unitNodes[unit].hasSign) return;
-        auto& s = unitNodes[unit];
-        Rectangle board{ s.signX, s.signY, s.signW, s.signH };
-        if (unit == 0) {
-            UI::WoodenSign(board, "ETHICS", "ISLAND",
-                           { Color{ 244, 114, 182, 255 }, Color{ 251, 146, 60, 255 }, Color{ 253, 224, 71, 255 },
-                             Color{ 74, 222, 128, 255 }, Color{ 96, 165, 250, 255 }, Color{ 192, 132, 252, 255 } });
-        } else if (unit == 3) {
-            UI::WoodenSign(board, "EMOTIONS", "ISLAND",
-                           { Color{ 253, 224, 71, 255 }, Color{ 244, 114, 182, 255 }, Color{ 125, 211, 252, 255 },
-                             Color{ 253, 186, 116, 255 }, Color{ 216, 180, 254, 255 }, Color{ 134, 239, 172, 255 } });
-        }
-    }
-
-    void drawNodes() {
-        UI::MapNodeStyle style = styleForUnit();
-        auto& defs = unitNodes[unit].nodes;
-        int start = gGameData.unitStart(unit);
-        Vector2 mouse = Input::Mouse();
-
-        std::vector<const NodeDef*> ordered;
-        for (const auto& n : defs) ordered.push_back(&n);
-        std::sort(ordered.begin(), ordered.end(), [](const NodeDef* a, const NodeDef* b) { return a->y < b->y; });
-
-        for (const NodeDef* np : ordered) {
-            int gi = start + np->number - 1;
-            if (gi < 0 || gi >= gGameData.levelCount()) continue;
-            auto& lvl = gGameData.levels[gi];
-            bool unlocked = lvl.unlocked || verifyAllUnlocked;
-            bool current = (gi == gGameData.current_level);
-            bool check = lvl.stars > 0 && np->number != 1 && !current;
-            bool twoDigits = (unit == 2);
-            bool hover = unlocked && CheckCollisionPointCircle(mouse, { np->x, np->y }, 30.0f);
-
-            if (current) {
-                float pulse = 0.5f + 0.5f * std::sin(time * 4.0f);
-                DrawCircleV({ np->x, np->y }, 37.0f + pulse * 3.0f,
-                            Theme::WithAlpha(style.faceA, 0.16f));
-                DrawCircleLines((int)np->x, (int)np->y, 34.0f + pulse * 2.0f,
-                                Theme::WithAlpha(WHITE, 0.30f + pulse * 0.25f));
-            }
-            if (hover) {
-                DrawCircleV({ np->x, np->y }, 38.0f, Theme::WithAlpha(WHITE, 0.12f));
-            }
-
-            UI::MapNode({ np->x, np->y }, current ? 28.0f : 26.0f, np->number, unlocked, current,
-                        lvl.stars, check, twoDigits, style);
-
-            if (unit == 2 && np->number == 1 && lvl.stars > 0) {
-                Theme::text3D(Theme::fontCartoon, "Cleared", { np->x, np->y + 58.0f }, 15.0f,
-                              Theme::goldLight, Color{ 76, 40, 20, 255 }, 1.8f, Theme::WithAlpha(BLACK, 0.65f), true, true);
-            }
-        }
-    }
-
-    void drawSafetyFoliage() {
-        // These two bushes cover the inpainting footprints left by the removed
-        // reference HUD markers at the top of the food pyramid.
-        auto bush = [&](Vector2 c, float s, Color leaf, Color dark) {
-            DrawEllipse((int)c.x, (int)(c.y + 10.0f * s), 26.0f * s, 8.0f * s, Theme::WithAlpha(BLACK, 0.20f));
-            DrawCircleV({ c.x - 12.0f * s, c.y }, 14.0f * s, dark);
-            DrawCircleV({ c.x + 12.0f * s, c.y + 1.0f * s }, 13.0f * s, dark);
-            DrawCircleV({ c.x, c.y - 8.0f * s }, 17.0f * s, leaf);
-            DrawCircleV({ c.x - 10.0f * s, c.y - 2.0f * s }, 12.0f * s, leaf);
-            DrawCircleV({ c.x + 10.0f * s, c.y - 1.0f * s }, 11.0f * s, leaf);
-            DrawCircleV({ c.x - 5.0f * s, c.y - 13.0f * s }, 6.0f * s, Theme::WithAlpha(Color{ 190, 242, 100, 255 }, 0.65f));
-            for (int i = 0; i < 3; ++i) {
-                DrawCircleV({ c.x - 12.0f * s + i * 12.0f * s, c.y - 5.0f * s + (i % 2) * 5.0f * s },
-                            2.2f * s, (i % 2 == 0) ? Color{ 251, 191, 36, 255 } : Color{ 244, 114, 182, 255 });
-            }
-        };
-        bush({ 272.0f, 344.0f }, 0.95f, Color{ 34, 197, 94, 255 }, Color{ 21, 128, 61, 255 });
-        bush({ 273.0f, 247.0f }, 0.82f, Color{ 74, 222, 128, 255 }, Color{ 22, 163, 74, 255 });
-    }
-
-    void drawToast() {
-        if (toastTimer <= 0.0f) return;
-        float a = std::min(1.0f, toastTimer / 0.4f);
-        Rectangle r{ 90.0f, 64.0f, 360.0f, 40.0f };
-        DrawRectangleRounded(r, 0.5f, 10, Theme::WithAlpha(Color{ 15, 23, 42, 240 }, a));
-        DrawRectangleRoundedLines(r, 0.5f, 10, 1.4f, Theme::WithAlpha(Theme::gold, a * 0.8f));
-        Theme::text(toast, { r.x + r.width * 0.5f, r.y + 11.0f }, 13.0f,
-                    Theme::WithAlpha(WHITE, a), true);
-    }
-
-    void drawSelector() {
-        DrawRectangle(0, 0, 540, 960, Theme::WithAlpha(BLACK, 0.62f));
-        Rectangle panel{ 28.0f, 84.0f, 484.0f, 792.0f };
-        UI::DropShadow(panel, 26.0f, 8.0f, 0.45f, 3.0f);
-        UI::GradientRound(panel, 26.0f, Color{ 24, 37, 64, 250 }, Color{ 9, 15, 30, 252 });
-        DrawRectangleRoundedLines(panel, UI::Roundness(panel, 26.0f), 16, 2.5f, Theme::WithAlpha(Theme::gold, 0.9f));
-        Theme::text3D(Theme::fontCartoon, "SELECT ISLAND", { 270.0f, 120.0f }, 27.0f,
-                      Theme::goldLight, Color{ 76, 40, 20, 255 }, 2.0f, Theme::WithAlpha(BLACK, 0.55f), true, true);
-
-        const char* names[] = { "ETHICS ISLAND", "SAFETY ISLAND", "SPACE ISLAND", "EMOTIONS ISLAND" };
-        const char* subs[] = { "Ethics in Business", "Safety First", "Astronomy & Space", "Feelings and Humor" };
-        Vector2 mouse = Input::Mouse();
-        for (int i = 0; i < 4; ++i) {
-            Rectangle card{ 52.0f, 168.0f + i * 166.0f, 436.0f, 142.0f };
-            bool hover = CheckCollisionPointRec(mouse, card);
-            bool active = (i == unit);
-            UI::GradientRound({ card.x, card.y + 4.0f, card.width, card.height }, 20.0f,
-                              Theme::WithAlpha(Color{ 10, 17, 32, 255 }, 0.8f), Theme::WithAlpha(Color{ 4, 8, 18, 255 }, 0.8f));
-            UI::GradientRound(card, 20.0f,
-                              active ? Color{ 44, 68, 110, 255 } : (hover ? Color{ 34, 52, 86, 255 } : Color{ 25, 39, 68, 255 }),
-                              Color{ 13, 22, 42, 255 });
-            DrawRectangleRoundedLines(card, UI::Roundness(card, 20.0f), 16, active ? 3.0f : 1.5f,
-                                      active ? Theme::gold : Theme::WithAlpha(Color{ 96, 165, 250, 255 }, hover ? 0.8f : 0.35f));
-            // icon medallion
-            Vector2 ic{ card.x + 64.0f, card.y + card.height * 0.5f };
-            DrawCircleV({ ic.x, ic.y + 3.0f }, 50.0f, Theme::WithAlpha(BLACK, 0.3f));
-            DrawCircleV(ic, 50.0f, Theme::WithAlpha(Color{ 30, 64, 175, 255 }, 0.35f));
-            DrawCircleLines((int)ic.x, (int)ic.y, 50.0f, Theme::WithAlpha(WHITE, 0.2f));
-            if (i == 0) Art::ScalesOfJustice({ ic.x, ic.y + 38.0f }, 0.52f);
-            else if (i == 1) {
-                DrawCircleV({ ic.x - 5.0f, ic.y + 4.0f }, 24.0f, Color{ 239, 68, 68, 255 });
-                DrawCircleV({ ic.x - 11.0f, ic.y - 2.0f }, 5.0f, Theme::WithAlpha(WHITE, 0.35f));
-                DrawEllipse((int)(ic.x + 18.0f), (int)(ic.y - 8.0f), 14.0f, 7.0f, Color{ 74, 222, 128, 255 });
-                DrawLineEx({ ic.x + 18.0f, ic.y - 2.0f }, { ic.x + 22.0f, ic.y + 16.0f }, 2.0f, Color{ 21, 128, 61, 255 });
-            } else if (i == 2) {
-                DrawCircleV({ ic.x, ic.y + 2.0f }, 26.0f, Color{ 251, 191, 36, 255 });
-                DrawRing(ic, 30.0f, 38.0f, 0.2f, 3.0f, 28, Color{ 244, 114, 182, 255 });
-                DrawEllipse((int)(ic.x - 8.0f), (int)(ic.y - 8.0f), 8.0f, 5.0f, Theme::WithAlpha(WHITE, 0.35f));
-            } else {
-                Art::Heart({ ic.x, ic.y }, 34.0f, Color{ 244, 63, 94, 255 });
-            }
-            Theme::text3D(Theme::fontCartoon, names[i], { card.x + 138.0f, card.y + 34.0f }, 22.0f,
-                          active ? Theme::goldLight : WHITE, Color{ 22, 30, 50, 255 }, 1.8f,
-                          Theme::WithAlpha(BLACK, 0.45f));
-            Theme::text(subs[i], { card.x + 140.0f, card.y + 72.0f }, 14.0f, Theme::WithAlpha(WHITE, 0.75f));
-            int stars = starsInUnit(i);
-            Theme::text3D(Theme::fontCartoon, std::to_string(stars) + " / " + std::to_string(gGameData.unitLevelCount(i) * 3),
-                          { card.x + 140.0f, card.y + 104.0f }, 14.0f, Theme::goldLight,
-                          Color{ 76, 40, 20, 255 }, 1.2f, Theme::WithAlpha(BLACK, 0.5f));
-            for (int s = 0; s < 3; ++s) {
-                UI::Star5({ card.x + 280.0f + s * 26.0f, card.y + 112.0f }, 10.0f, 4.5f,
-                          (s < std::min(3, stars)) ? Theme::gold : Theme::WithAlpha(WHITE, 0.18f),
-                          Theme::WithAlpha(Theme::goldDark, 0.7f), false);
-            }
-        }
-
-        Rectangle close{ 448.0f, 88.0f, 38.0f, 38.0f };
-        bool hov = CheckCollisionPointRec(mouse, close);
-        UI::IconButton3D(close, Color{ 248, 113, 113, 255 }, Color{ 185, 28, 28, 255 }, Color{ 254, 202, 202, 255 }, hov);
-        DrawLineEx({ close.x + 11.0f, close.y + 11.0f }, { close.x + 27.0f, close.y + 27.0f }, 3.0f, WHITE);
-        DrawLineEx({ close.x + 27.0f, close.y + 11.0f }, { close.x + 11.0f, close.y + 27.0f }, 3.0f, WHITE);
-    }
-
-    void drawSettings() {
-        DrawRectangle(0, 0, 540, 960, Theme::WithAlpha(BLACK, 0.62f));
-        Rectangle panel{ 80.0f, 230.0f, 380.0f, 420.0f };
-        UI::DropShadow(panel, 26.0f, 8.0f, 0.45f, 3.0f);
-        UI::GradientRound(panel, 26.0f, Color{ 26, 39, 68, 252 }, Color{ 10, 17, 32, 252 });
-        DrawRectangleRoundedLines(panel, UI::Roundness(panel, 26.0f), 16, 2.5f, Theme::WithAlpha(Theme::gold, 0.9f));
-        Theme::text3D(Theme::fontCartoon, "SETTINGS", { 270.0f, 270.0f }, 30.0f,
-                      Theme::goldLight, Color{ 76, 40, 20, 255 }, 2.0f, Theme::WithAlpha(BLACK, 0.55f), true, true);
-
-        Vector2 mouse = Input::Mouse();
-        Rectangle sound{ 112.0f, 330.0f, 316.0f, 58.0f };
-        bool sh = CheckCollisionPointRec(mouse, sound);
-        UI::Button3D(sound, "", Theme::WithAlpha(Color{ 30, 41, 59, 255 }, 0.9f),
-                     Theme::WithAlpha(Color{ 15, 23, 42, 255 }, 0.95f), Color{ 8, 15, 30, 255 },
-                     Color{ 71, 85, 105, 255 }, 18.0f, WHITE, sh);
-        UI::SoundIcon({ sound.x + 42.0f, sound.y + 29.0f }, 15.0f, Theme::soundOn, WHITE);
-        Theme::text(Theme::soundOn ? "SOUND: ON" : "SOUND: OFF", { sound.x + 74.0f, sound.y + 19.0f }, 18.0f, WHITE);
-
-        Rectangle reset{ 112.0f, 406.0f, 316.0f, 58.0f };
-        bool rh = CheckCollisionPointRec(mouse, reset);
-        UI::Button3D(reset, "RESET PROGRESS", Color{ 248, 113, 113, 255 }, Color{ 220, 38, 38, 255 },
-                     Color{ 127, 29, 29, 255 }, Color{ 254, 202, 202, 255 }, 18.0f, WHITE, rh);
-
-        Rectangle close{ 112.0f, 500.0f, 316.0f, 58.0f };
-        bool ch = CheckCollisionPointRec(mouse, close);
-        UI::Button3D(close, "BACK TO MAP", Color{ 74, 222, 128, 255 }, Color{ 22, 163, 74, 255 },
-                     Color{ 20, 83, 45, 255 }, Color{ 187, 247, 208, 255 }, 18.0f, WHITE, ch);
-    }
-
-    void handleOverlays(int& nextScreen) {
-        Vector2 mouse = Input::Mouse();
-        bool clicked = IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
-        if (selectorOpen) {
-            Rectangle close{ 448.0f, 88.0f, 38.0f, 38.0f };
-            if (clicked && CheckCollisionPointRec(mouse, close)) {
-                selectorOpen = false;
-                gAudio.playClick();
-                return;
-            }
-            for (int i = 0; i < 4; ++i) {
-                Rectangle card{ 52.0f, 168.0f + i * 166.0f, 436.0f, 142.0f };
-                if (clicked && CheckCollisionPointRec(mouse, card)) {
-                    selectorOpen = false;
-                    gAudio.playWhoosh();
-                    setUnit(i);
-                    return;
+            float target = (float)std::clamp(boyTargetScroll - 1, 0, 13);
+            if (std::abs(boyProgress - target) > 0.02f) {
+                float dir = (target > boyProgress) ? 1.0f : -1.0f;
+                boyProgress += dir * dt * 3.0f;
+                if ((dir > 0 && boyProgress > target) || (dir < 0 && boyProgress < target)) {
+                    boyProgress = target;
                 }
             }
-            if (clicked && !CheckCollisionPointRec(mouse, { 28, 84, 484, 792 })) selectorOpen = false;
-            return;
         }
-        if (settingsOpen) {
-            Rectangle sound{ 112.0f, 330.0f, 316.0f, 58.0f };
-            Rectangle reset{ 112.0f, 406.0f, 316.0f, 58.0f };
-            Rectangle close{ 112.0f, 500.0f, 316.0f, 58.0f };
-            if (clicked && CheckCollisionPointRec(mouse, sound)) {
-                Theme::soundOn = !Theme::soundOn;
-                gAudio.enabled = Theme::soundOn;
-                gAudio.playClick();
-            } else if (clicked && CheckCollisionPointRec(mouse, reset)) {
-                gGameData.resetProgress();
-                setUnit(unit);
-                gAudio.playClick();
-                showToast("PROGRESS RESET");
-            } else if (clicked && CheckCollisionPointRec(mouse, close)) {
-                settingsOpen = false;
-                gAudio.playClick();
+
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            Vector2 m = Input::Mouse();
+
+            // Top Unit Selector Tabs (0=Ethics, 1=Safety, 2=Space, 3=Graduation Academy)
+            for (int u = 0; u < 4; ++u) {
+                Rectangle tabRec{ 12.0f + u * 130.0f, 72.0f, 124.0f, 38.0f };
+                if (CheckCollisionPointRec(m, tabRec)) {
+                    setUnit(u);
+                    gAudio.playClick();
+                    return -1;
+                }
             }
-            (void)nextScreen;
-            return;
-        }
-    }
 
-    void handleInput(int screenW, int screenH, int& nextScreen) {
-        (void)screenW;
-        (void)screenH;
-        handleOverlays(nextScreen);
-        if (selectorOpen || settingsOpen) return;
-
-        Vector2 mouse = Input::Mouse();
-        bool clicked = IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
-        if (!clicked) return;
-
-        // top chip chevrons / center
-        if (unit != 2) {
-            Rectangle chip{ 132.0f, 12.0f, 276.0f, 38.0f };
-            if (CheckCollisionPointRec(mouse, chip)) {
-                if (mouse.x < chip.x + 34.0f) {
-                    setUnit((unit + 3) % 4);
-                    gAudio.playWhoosh();
-                } else if (mouse.x > chip.x + chip.width - 34.0f) {
-                    setUnit((unit + 1) % 4);
-                    gAudio.playWhoosh();
+            // Bottom Navigation Buttons: Home, Shop, Streak, March Boy (on Academy Map)
+            if (CheckCollisionPointRec(m, Rectangle{ 14, 892, 118, 56 })) {
+                gAudio.playClick();
+                pendingNavScreen = Nav::SCREEN_HOME;
+                return -1;
+            }
+            if (CheckCollisionPointRec(m, Rectangle{ 142, 892, 118, 56 })) {
+                gAudio.playClick();
+                pendingNavScreen = Nav::SCREEN_SHOP;
+                return -1;
+            }
+            if (CheckCollisionPointRec(m, Rectangle{ 270, 892, 118, 56 })) {
+                gAudio.playClick();
+                pendingNavScreen = Nav::SCREEN_STREAK;
+                return -1;
+            }
+            if (CheckCollisionPointRec(m, Rectangle{ 398, 892, 128, 56 })) {
+                if (unit == 3) {
+                    boyProgress = 0.0f;
+                    boyTargetScroll = 14;
+                    boyMarching = true;
+                    gAudio.playFanfare();
                 } else {
-                    selectorOpen = true;
+                    setUnit((unit + 1) % 4);
                     gAudio.playClick();
                 }
-                return;
+                return -1;
+            }
+
+            // Node / Scroll clicks
+            const auto& nodes = units[unit].nodes;
+            for (size_t i = 0; i < nodes.size(); ++i) {
+                float hitRadius = (unit == 3) ? 34.0f : 28.0f;
+                if (CheckCollisionPointCircle(m, { nodes[i].x, nodes[i].y }, hitRadius)) {
+                    gAudio.playPop();
+                    if (unit == 3) {
+                        boyTargetScroll = (int)i + 1;
+                        boyMarching = false;
+                    }
+                    int totalLvls = std::max(1, gGameData.levelCount());
+                    int startIdx = (unit < 3) ? gGameData.unitStart(unit) : 0;
+                    selectedLevel = (startIdx + (int)i) % totalLvls;
+                    return selectedLevel;
+                }
+            }
+        }
+        return -1;
+    }
+
+    void drawGraduationAcademyMap(int w, int h) {
+        float t = Theme::timeNow;
+
+        // 1. Clean Academy Map Backdrop
+        if (!UIAssets::drawStretch("image2_graduation_academy_map_assets/map_background_clean.png",
+                                   Rectangle{ 0, 0, (float)w, (float)h })) {
+            DrawRectangleGradientV(0, 0, w, h, Color{ 56, 189, 248, 255 }, Color{ 186, 230, 253, 255 });
+        }
+
+        // 2. Giant Open Book Bridge, Clock Tower, and Grand Blue Castle
+        UIAssets::drawCentered("image2_graduation_academy_map_assets/bridge_giant_open_book.png",
+                               { 255, 405 }, 255, 165);
+        UIAssets::drawCentered("image2_graduation_academy_map_assets/building_clock_tower.png",
+                               { 102, 235 }, 145, 225);
+        UIAssets::drawCentered("image2_graduation_academy_map_assets/building_big_blue_castle.png",
+                               { 312, 165 }, 290, 245);
+
+        // 3. Waving Castle Flags atop the Grand Blue Castle
+        bool flagPose2 = ((int)(t * 4.5f) % 2) == 1;
+        float flagTilt = std::sin(t * 5.0f) * 6.0f;
+        const char* flagKey = flagPose2
+            ? "image2_graduation_academy_map_assets/prop_castle_flag_pose2.png"
+            : "image2_graduation_academy_map_assets/prop_castle_flag_pose1.png";
+        UIAssets::drawCentered(flagKey, { 248, 68 }, 54, 54, flagTilt);
+        UIAssets::drawCentered(flagKey, { 372, 68 }, 54, 54, -flagTilt);
+
+        // 4. Spinning Globe, Chalkboard, ABC Blocks & Flying Magic Books
+        float globeTilt = std::sin(t * 2.8f) * 12.0f;
+        UIAssets::drawCentered("image2_graduation_academy_map_assets/prop_globe_full.png",
+                               { 442, 650 }, 118, 135, globeTilt);
+        UIAssets::drawCentered("image2_graduation_academy_map_assets/prop_chalkboard.png",
+                               { 95, 515 }, 135, 120);
+        UIAssets::drawCentered("image2_graduation_academy_map_assets/island_abc_blocks.png",
+                               { 88, 795 }, 135, 115);
+
+        bool bookPose2 = ((int)(t * 5.2f) % 2) == 1;
+        const char* bookKey = bookPose2
+            ? "image2_graduation_academy_map_assets/prop_flying_book_pose2.png"
+            : "image2_graduation_academy_map_assets/prop_flying_book_pose1.png";
+        UIAssets::drawCentered(bookKey, { 125, 355 + std::sin(t * 4.0f) * 9.0f }, 78, 68, std::sin(t * 3.5f) * 8.0f);
+        UIAssets::drawCentered(bookKey, { 435, 365 + std::cos(t * 3.8f) * 9.0f }, 74, 64, std::cos(t * 3.2f) * -8.0f);
+
+        // 5. Golden Path Connecting all 14 Scrolls & Telegrams up to the Grand Blue Castle
+        const auto& nodes = units[3].nodes;
+        for (size_t i = 0; i + 1 < nodes.size(); ++i) {
+            DrawLineEx({ nodes[i].x, nodes[i].y }, { nodes[i + 1].x, nodes[i + 1].y },
+                       8.0f, Color{ 251, 191, 36, 175 });
+            DrawLineEx({ nodes[i].x, nodes[i].y }, { nodes[i + 1].x, nodes[i + 1].y },
+                       3.5f, Color{ 254, 249, 195, 235 });
+        }
+
+        // Draw all 14 Numbered Scrolls (scroll_step_01.png .. scroll_step_14.png)
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            char scrollKey[128];
+            std::snprintf(scrollKey, sizeof(scrollKey),
+                          "image2_graduation_academy_map_assets/numbered_scrolls_1_to_14/scroll_step_%02d.png",
+                          (int)i + 1);
+            float pulse = ((int)i == (int)std::round(boyProgress)) ? (1.0f + 0.08f * std::sin(t * 5.0f)) : 1.0f;
+            if (!UIAssets::drawCentered(scrollKey, { nodes[i].x, nodes[i].y }, 86 * pulse, 64 * pulse)) {
+                UIAssets::drawCentered("image2_graduation_academy_map_assets/prop_scroll_and_telegram_step.png",
+                                       { nodes[i].x, nodes[i].y }, 86 * pulse, 64 * pulse);
+                Theme::text3D(std::to_string(i + 1), { nodes[i].x, nodes[i].y - 4.0f },
+                              18, Color{ 120, 53, 15, 255 }, WHITE, 2.0f, BLANK, true, true);
             }
         }
 
-        // bottom buttons
-        Rectangle gear{ 15.0f, unit == 2 ? 872.0f : 894.0f, 52.0f, 52.0f };
-        Rectangle mapBtn{ 473.0f, unit == 2 ? 872.0f : 894.0f, 52.0f, 52.0f };
-        if (CheckCollisionPointRec(mouse, gear)) {
-            settingsOpen = true;
-            gAudio.playClick();
-            return;
-        }
-        if (CheckCollisionPointRec(mouse, mapBtn)) {
-            selectorOpen = true;
-            gAudio.playClick();
-            return;
-        }
-        if (unit == 2) {
-            Rectangle menu{ 476.0f, 13.0f, 48.0f, 48.0f };
-            if (CheckCollisionPointRec(mouse, menu)) {
-                settingsOpen = true;
-                gAudio.playClick();
-                return;
-            }
+        // 6. Animated Owl Flapping Above the Academy
+        bool owlFlap = ((int)(t * 4.8f) % 2) == 1;
+        const char* owlKey = owlFlap
+            ? "image2_graduation_academy_map_assets/char_owl_pose2_flapping.png"
+            : "image2_graduation_academy_map_assets/char_owl_pose1_idle.png";
+        UIAssets::drawCentered(owlKey, { 418, 225 + std::sin(t * 3.6f) * 10.0f }, 96, 96);
+
+        // 7. Animated Boy Student Moving Across Scrolls (1 -> 14) to the Blue Castle
+        int idxA = std::clamp((int)std::floor(boyProgress), 0, 13);
+        int idxB = std::clamp(idxA + 1, 0, 13);
+        float frac = boyProgress - (float)idxA;
+        Vector2 boyPos{
+            nodes[idxA].x + (nodes[idxB].x - nodes[idxA].x) * frac,
+            nodes[idxA].y + (nodes[idxB].y - nodes[idxA].y) * frac - 34.0f
+        };
+        float hopY = std::abs(std::sin(t * 5.5f)) * -12.0f;
+        bool boyJump = ((int)(t * 4.0f) % 2) == 1 || boyMarching;
+        const char* boyKey = boyJump
+            ? "image2_graduation_academy_map_assets/char_boy_pose2_jumping.png"
+            : "image2_graduation_academy_map_assets/char_boy_pose1_cheering.png";
+        UIAssets::drawCentered(boyKey, { boyPos.x, boyPos.y + hopY }, 105, 118);
+
+        // 8. Graduation Academy Banner
+        UIAssets::drawCentered("image2_graduation_academy_map_assets/prop_graduation_academy_banner.png",
+                               { 270, 132 }, 320, 66);
+    }
+
+    void drawSafetyFoodIsland(int w, int h) {
+        float t = Theme::timeNow;
+        if (!UIAssets::drawStretch("assets/scenery/clean_safety.png", Rectangle{ 0, 0, (float)w, (float)h })) {
+            DrawRectangleGradientV(0, 0, w, h, Color{ 30, 136, 229, 255 }, Color{ 2, 119, 189, 255 });
         }
 
-        // stage nodes
-        int start = gGameData.unitStart(unit);
-        for (const auto& n : unitNodes[unit].nodes) {
-            if (!pointInNode(mouse, n)) continue;
-            int gi = start + n.number - 1;
-            if (gi < 0 || gi >= gGameData.levelCount()) return;
-            auto& lvl = gGameData.levels[gi];
-            bool unlocked = lvl.unlocked || verifyAllUnlocked;
-            if (!unlocked) {
-                gAudio.playClick();
-                showToast("FINISH THE PREVIOUS STAGE FIRST");
-                return;
+        // Animated Chef & Dog Inspector from food_pyramid_island_ui_kit
+        float chefBob = std::sin(t * 3.2f) * 5.0f;
+        UIAssets::drawCentered("food_pyramid_island_ui_kit/02_characters_animated/chef_mascot_waving.png",
+                               { 355, 455 + chefBob }, 125, 135);
+        UIAssets::drawCentered("food_pyramid_island_ui_kit/02_characters_animated/dog_inspector_full.png",
+                               { 420, 645 + std::cos(t * 3.5f) * 4.0f }, 105, 105);
+
+        const auto& nodes = units[1].nodes;
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            char key[128];
+            std::snprintf(key, sizeof(key),
+                          "food_pyramid_island_ui_kit/04_level_buttons_1_to_10/level_%02d_button.png",
+                          (int)i + 1);
+            if (!UIAssets::drawCentered(key, { nodes[i].x, nodes[i].y }, 68, 68)) {
+                DrawCircleV({ nodes[i].x, nodes[i].y }, 26.0f, Color{ 245, 158, 11, 255 });
+                Theme::text3D(std::to_string(i + 1), { nodes[i].x, nodes[i].y }, 20, WHITE, BLACK, 2.0f, BLACK, true, true);
             }
-            gGameData.current_level = gi;
-            nextScreen = Nav::stageScreenForLevel(gi);
-            gAudio.playWhoosh();
-            return;
         }
     }
 
-    void draw(int screenW, int screenH) {
-        if (unit <= 2 && cleanBg[unit].id > 0) {
-            DrawTexturePro(cleanBg[unit], { 0, 0, (float)cleanBg[unit].width, (float)cleanBg[unit].height },
-                           { 0, 0, (float)screenW, (float)screenH }, { 0, 0 }, 0.0f, WHITE);
-        } else {
-            Art::CarnivalIsland(screenW, screenH, time);
+    void drawCosmicSpaceIsland(int w, int h) {
+        float t = Theme::timeNow;
+        if (!UIAssets::drawStretch("assets/scenery/clean_space.png", Rectangle{ 0, 0, (float)w, (float)h })) {
+            DrawRectangleGradientV(0, 0, w, h, Color{ 11, 15, 41, 255 }, Color{ 46, 16, 101, 255 });
         }
 
-        if (unit != 2) drawTopChip();
-        else drawSpaceHUD();
+        // Animated Astronaut, Rocket & Satellite from cosmic_space_observatory_ui_kit
+        UIAssets::drawCentered("cosmic_space_observatory_ui_kit/03_characters_and_vehicles/astronaut_with_star_flag.png",
+                               { 295, 175 + std::sin(t * 2.8f) * 7.0f }, 120, 120);
+        UIAssets::drawCentered("cosmic_space_observatory_ui_kit/03_characters_and_vehicles/space_satellite_solar_wings.png",
+                               { 435, 215 + std::cos(t * 2.4f) * 9.0f }, 115, 95, std::sin(t * 1.8f) * 6.0f);
 
-        drawSigns();
-        if (unit == 1) drawSafetyFoliage();
-        drawNodes();
-        if (unit != 2) drawBottomButtons();
+        const auto& nodes = units[2].nodes;
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            char key[128];
+            std::snprintf(key, sizeof(key),
+                          "cosmic_space_observatory_ui_kit/04_level_nodes_01_to_10/node_%02d_cyan.png",
+                          (int)i + 1);
+            if (!UIAssets::drawCentered(key, { nodes[i].x, nodes[i].y }, 68, 68)) {
+                DrawCircleV({ nodes[i].x, nodes[i].y }, 26.0f, Color{ 6, 182, 212, 255 });
+                Theme::text3D(std::to_string(i + 1), { nodes[i].x, nodes[i].y }, 20, WHITE, BLACK, 2.0f, BLACK, true, true);
+            }
+        }
+    }
+
+    void drawEthicsIsland(int w, int h) {
+        if (!UIAssets::drawStretch("assets/scenery/clean_ethics.png", Rectangle{ 0, 0, (float)w, (float)h })) {
+            DrawRectangleGradientV(0, 0, w, h, Color{ 174, 226, 255, 255 }, Color{ 243, 232, 255, 255 });
+        }
+        const auto& nodes = units[0].nodes;
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            Color c = (i == 0) ? Color{ 14, 165, 233, 255 } : Color{ 148, 163, 184, 255 };
+            DrawCircleV({ nodes[i].x, nodes[i].y + 4.0f }, 27.0f, Color{ 15, 23, 42, 140 });
+            DrawCircleV({ nodes[i].x, nodes[i].y }, 26.0f, c);
+            DrawCircleLines((int)nodes[i].x, (int)nodes[i].y, 26.0f, WHITE);
+            Theme::text3D(std::to_string(i + 1), { nodes[i].x, nodes[i].y }, 20, WHITE, BLACK, 2.0f, BLACK, true, true);
+        }
+    }
+
+    void draw(int w, int h) {
+        if (unit == 0) drawEthicsIsland(w, h);
+        else if (unit == 1) drawSafetyFoodIsland(w, h);
+        else if (unit == 2) drawCosmicSpaceIsland(w, h);
+        else drawGraduationAcademyMap(w, h);
+
+        // Top HUD Header Bar
+        UIAssets::drawFit("cosmic_space_observatory_ui_kit/01_hud_bars_and_buttons/hud_top_star_progress_bar.png",
+                          Rectangle{ 14, 10, 260, 52 });
+        UIAssets::drawFit("cosmic_space_observatory_ui_kit/01_hud_bars_and_buttons/hud_top_coin_counter_pill.png",
+                          Rectangle{ 310, 12, 145, 48 });
+        Theme::text3D(std::to_string(Theme::coins), { 398, 36 }, 20, Color{ 253, 224, 71, 255 }, BLACK, 2.0f, BLACK, true, true);
+
+        // 4 Unit Tabs (Ethics, Safety, Space, Academy 1-14)
+        const char* tabLabels[4] = { "1.ETHICS", "2.SAFETY", "3.SPACE", "4.ACADEMY" };
+        for (int u = 0; u < 4; ++u) {
+            Rectangle tabRec{ 12.0f + u * 130.0f, 72.0f, 124.0f, 38.0f };
+            Color topC = (unit == u) ? Color{ 251, 191, 36, 255 } : Color{ 30, 41, 59, 215 };
+            Color botC = (unit == u) ? Color{ 217, 119, 6, 255 } : Color{ 15, 23, 42, 215 };
+            UI::GradientRound(tabRec, 14.0f, topC, botC);
+            UI::Rim(tabRec, 14.0f, WHITE, WHITE, Color{ 100, 116, 139, 255 });
+            Theme::text3D(tabLabels[u], { tabRec.x + 62.0f, tabRec.y + 19.0f },
+                          15, WHITE, BLACK, 2.0f, BLACK, true, true);
+        }
+
+        // Bottom Navigation Bar (Home, Shop, Streak 1-7, March/Next)
+        const char* botLabels[4] = { "HOME", "SHOP", "STREAK", (unit == 3) ? "GO 1->14" : "NEXT MAP" };
+        Color botCols[4] = {
+            Color{ 16, 185, 129, 255 },
+            Color{ 124, 58, 237, 255 },
+            Color{ 234, 88, 12, 255 },
+            Color{ 37, 99, 235, 255 }
+        };
+        for (int i = 0; i < 4; ++i) {
+            Rectangle r{ 14.0f + i * 128.0f, 892.0f, 120.0f, 54.0f };
+            UI::DropShadow(r, 16.0f, 4.0f, 0.35f, 2.0f);
+            UI::GradientRound(r, 16.0f, botCols[i], Color{ 15, 23, 42, 255 });
+            UI::Rim(r, 16.0f, Color{ 251, 191, 36, 255 }, WHITE, Color{ 180, 83, 9, 255 });
+            Theme::text3D(botLabels[i], { r.x + 60.0f, r.y + 27.0f }, 16, WHITE, BLACK, 2.0f, BLACK, true, true);
+        }
 
         Theme::drawParticles();
-        drawToast();
-
-        if (selectorOpen) drawSelector();
-        if (settingsOpen) drawSettings();
     }
 };

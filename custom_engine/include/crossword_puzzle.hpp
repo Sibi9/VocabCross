@@ -347,3 +347,5 @@ public:
         return cells[cellIdx].words[0];
     }
 };
+
+using CrosswordLayout = CrosswordPuzzle;

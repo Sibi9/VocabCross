@@ -38,6 +38,11 @@ struct LevelInfo {
     bool unlocked = false;
     int stars = 0;
     int score = 0;
+
+    // Compatibility fields:
+    WordData word;
+    int unit = 0;
+    std::string mode;
 };
 
 class GameDataManager {
@@ -46,6 +51,10 @@ public:
     std::vector<LevelInfo> levels;
     int current_level = 0;
     int total_stars = 0;
+
+    bool loadFromFile(const std::string& json_path) {
+        return loadData(json_path);
+    }
 
     bool loadData(const std::string& json_path) {
         std::ifstream file(json_path);
@@ -91,6 +100,9 @@ public:
                     lvl.unit_level_index = static_cast<int>(w_idx);
                     lvl.word_index = static_cast<int>(w_idx);
                     lvl.data = word;
+                    lvl.word = word;
+                    lvl.unit = static_cast<int>(u_idx);
+                    lvl.mode = word.mode;
                     lvl.unlocked = (global_idx == 0);
                     levels.push_back(lvl);
                     ++global_idx;
@@ -217,10 +229,13 @@ inline GameDataManager gGameData;
 // ---------------------------------------------------------------------------
 namespace Nav {
     enum ScreenId {
+        SCREEN_HOME = 0,
         SCREEN_MAP = 1,
-        SCREEN_CROSSWORD = 3,
-        SCREEN_IMAGE_GUESS = 4,
-        SCREEN_WHEEL = 5
+        SCREEN_CROSSWORD = 2,
+        SCREEN_IMAGE_GUESS = 3,
+        SCREEN_WHEEL = 4,
+        SCREEN_SHOP = 5,
+        SCREEN_STREAK = 6
     };
 
     inline int stageScreenForMode(const std::string& mode) {
