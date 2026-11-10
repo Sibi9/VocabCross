@@ -1,0 +1,7 @@
+﻿.idea/
+*.obj
+*.pdb
+*.ilk
+*.suo
+*.user
+.vs/
