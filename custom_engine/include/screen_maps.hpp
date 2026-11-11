@@ -33,38 +33,39 @@ public:
     float scrollY = 0.0f;
     float targetScrollY = 0.0f;
     int selectedLevel = -1;
-    int pendingNavScreen = -1; // For switching to Home, Shop, Streak
+    int activeNodeIdx = 0;
+    int hoveredNodeIdx = -1;
+    int pendingNavScreen = -1;
     std::vector<UnitNodes> units;
 
-    // Graduation Academy Boy march state along scrolls 1 -> 14
     int boyTargetScroll = 4;
-    float boyProgress = 3.0f; // 0-based index along the 14 scrolls
+    float boyProgress = 3.0f;
     bool boyMarching = false;
 
     void init() {
         units.resize(4);
 
-        // Unit 0: Ethics Island (10 nodes)
+        // Verified pixel-exact centers of the 10 3D nodes on Unit 0: Ethics Island (540x960)
         units[0].nodes = {
-            { 270, 760, 1 }, { 215, 712, 2 }, { 195, 655, 3 }, { 248, 608, 4 }, { 315, 568, 5 },
-            { 330, 512, 6 }, { 268, 472, 7 }, { 212, 430, 8 }, { 248, 382, 9 }, { 275, 330, 10 }
+            { 268, 795, 1 }, { 315, 765, 2 }, { 338, 705, 3 }, { 312, 646, 4 }, { 262, 606, 5 },
+            { 235, 551, 6 }, { 276, 464, 7 }, { 246, 405, 8 }, { 228, 376, 9 }, { 264, 324, 10 }
         };
         units[0].hasSign = true;
         units[0].signX = 160; units[0].signY = 820; units[0].signW = 220; units[0].signH = 110;
 
-        // Unit 1: Safety First / Food Pyramid Island (10 nodes)
+        // Verified pixel-exact centers of the 10 citrus nodes on Unit 1: Safety First Food Island (540x960)
         units[1].nodes = {
-            { 268, 855, 1 }, { 218, 795, 2 }, { 292, 738, 3 }, { 235, 675, 4 }, { 295, 612, 5 },
-            { 230, 548, 6 }, { 285, 482, 7 }, { 235, 415, 8 }, { 280, 342, 9 }, { 268, 260, 10 }
+            { 276, 892, 1 }, { 378, 830, 2 }, { 404, 774, 3 }, { 355, 725, 4 }, { 268, 566, 5 },
+            { 225, 526, 6 }, { 256, 488, 7 }, { 300, 444, 8 }, { 296, 368, 9 }, { 286, 252, 10 }
         };
 
-        // Unit 2: Space / Astronomy Observatory Island (10 nodes)
+        // Verified pixel-exact centers of the 10 neon nodes on Unit 2: Space Observatory Island (540x960)
         units[2].nodes = {
-            { 270, 825, 1 }, { 340, 760, 2 }, { 225, 705, 3 }, { 188, 635, 4 }, { 285, 575, 5 },
-            { 355, 505, 6 }, { 255, 445, 7 }, { 195, 385, 8 }, { 255, 325, 9 }, { 235, 265, 10 }
+            { 258, 822, 1 }, { 138, 728, 2 }, { 248, 654, 3 }, { 372, 588, 4 }, { 402, 495, 5 },
+            { 312, 472, 6 }, { 222, 398, 7 }, { 268, 325, 8 }, { 338, 265, 9 }, { 295, 205, 10 }
         };
 
-        // Unit 3: Graduation Academy Map (14 Numbered Scrolls + Telegrams reaching the Grand Blue Castle)
+        // Unit 3: Graduation Academy Map (14 Numbered Scrolls reaching the Grand Blue Castle)
         units[3].nodes = {
             { 165, 845, 1 },
             { 268, 825, 2 },
@@ -75,24 +76,26 @@ public:
             { 248, 598, 7 },
             { 358, 560, 8 },
             { 382, 495, 9 },
-            { 282, 452, 10 }, // Entering the Giant Open Book Bridge
-            { 225, 392, 11 }, // Middle of the Giant Open Book Bridge
-            { 278, 338, 12 }, // Upper Book Bridge
-            { 335, 282, 13 }, // Castle Courtyard
-            { 285, 222, 14 }  // Grand Blue Castle Gate!
+            { 282, 452, 10 },
+            { 225, 392, 11 },
+            { 278, 338, 12 },
+            { 335, 282, 13 },
+            { 285, 222, 14 }
         };
     }
 
     void setUnit(int u) {
         unit = std::clamp(u, 0, 3);
         selectedLevel = -1;
+        activeNodeIdx = 0;
+        hoveredNodeIdx = -1;
     }
 
     int update(float dt) {
         selectedLevel = -1;
         pendingNavScreen = -1;
+        hoveredNodeIdx = -1;
 
-        // Animate Boy walking along the 14 scrolls toward the Blue Castle
         if (boyMarching) {
             boyProgress += dt * 2.2f;
             if (boyProgress >= 13.0f) {
@@ -112,12 +115,20 @@ public:
             }
         }
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            Vector2 m = Input::Mouse();
+        Vector2 m = Input::Mouse();
+        const auto& nodes = units[unit].nodes;
+        float hitRadius = (unit == 3) ? 38.0f : 32.0f;
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            if (CheckCollisionPointCircle(m, { nodes[i].x, nodes[i].y }, hitRadius)) {
+                hoveredNodeIdx = (int)i;
+                break;
+            }
+        }
 
-            // Top Unit Selector Tabs (0=Ethics, 1=Safety, 2=Space, 3=Graduation Academy)
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            // Top Unit Selector Tabs (y=6..50)
             for (int u = 0; u < 4; ++u) {
-                Rectangle tabRec{ 12.0f + u * 130.0f, 72.0f, 124.0f, 38.0f };
+                Rectangle tabRec{ 10.0f + u * 131.0f, 8.0f, 125.0f, 40.0f };
                 if (CheckCollisionPointRec(m, tabRec)) {
                     setUnit(u);
                     gAudio.playClick();
@@ -125,23 +136,23 @@ public:
                 }
             }
 
-            // Bottom Navigation Buttons: Home, Shop, Streak, March Boy (on Academy Map)
-            if (CheckCollisionPointRec(m, Rectangle{ 14, 892, 118, 56 })) {
+            // Bottom Corner Navigation Pills (y=908..956)
+            if (CheckCollisionPointRec(m, Rectangle{ 8, 908, 96, 46 })) {
                 gAudio.playClick();
                 pendingNavScreen = Nav::SCREEN_HOME;
                 return -1;
             }
-            if (CheckCollisionPointRec(m, Rectangle{ 142, 892, 118, 56 })) {
+            if (CheckCollisionPointRec(m, Rectangle{ 108, 908, 90, 46 })) {
                 gAudio.playClick();
                 pendingNavScreen = Nav::SCREEN_SHOP;
                 return -1;
             }
-            if (CheckCollisionPointRec(m, Rectangle{ 270, 892, 118, 56 })) {
+            if (CheckCollisionPointRec(m, Rectangle{ 342, 908, 92, 46 })) {
                 gAudio.playClick();
                 pendingNavScreen = Nav::SCREEN_STREAK;
                 return -1;
             }
-            if (CheckCollisionPointRec(m, Rectangle{ 398, 892, 128, 56 })) {
+            if (CheckCollisionPointRec(m, Rectangle{ 438, 908, 94, 46 })) {
                 if (unit == 3) {
                     boyProgress = 0.0f;
                     boyTargetScroll = 14;
@@ -154,182 +165,137 @@ public:
                 return -1;
             }
 
-            // Node / Scroll clicks
-            const auto& nodes = units[unit].nodes;
-            for (size_t i = 0; i < nodes.size(); ++i) {
-                float hitRadius = (unit == 3) ? 34.0f : 28.0f;
-                if (CheckCollisionPointCircle(m, { nodes[i].x, nodes[i].y }, hitRadius)) {
-                    gAudio.playPop();
-                    if (unit == 3) {
-                        boyTargetScroll = (int)i + 1;
-                        boyMarching = false;
-                    }
-                    int totalLvls = std::max(1, gGameData.levelCount());
-                    int startIdx = (unit < 3) ? gGameData.unitStart(unit) : 0;
-                    selectedLevel = (startIdx + (int)i) % totalLvls;
-                    return selectedLevel;
+            // Node / Scroll click
+            if (hoveredNodeIdx >= 0 && hoveredNodeIdx < (int)nodes.size()) {
+                gAudio.playPop();
+                activeNodeIdx = hoveredNodeIdx;
+                if (unit == 3) {
+                    boyTargetScroll = hoveredNodeIdx + 1;
+                    boyMarching = false;
                 }
+                int totalLvls = std::max(1, gGameData.levelCount());
+                int startIdx = (unit < 3) ? gGameData.unitStart(unit) : 0;
+                selectedLevel = (startIdx + hoveredNodeIdx) % totalLvls;
+                return selectedLevel;
             }
         }
         return -1;
     }
 
+    void drawNodeIndicators(const std::vector<NodeDef>& nodes, float t) {
+        if (nodes.empty()) return;
+        int cur = activeNodeIdx % (int)nodes.size();
+        Vector2 pos{ nodes[cur].x, nodes[cur].y };
+        float pulse = 1.0f + 0.14f * std::sin(t * 5.2f);
+        DrawCircleLines((int)pos.x, (int)pos.y, 25.0f * pulse, Color{ 253, 224, 71, 245 });
+        DrawCircleLines((int)pos.x, (int)pos.y, 28.0f * pulse, Color{ 255, 255, 255, 195 });
+
+        // Bouncing "PLAY" pointer badge above active node
+        float bounce = std::sin(t * 6.0f) * 5.0f;
+        Rectangle tag{ pos.x - 32.0f, pos.y - 54.0f + bounce, 64.0f, 22.0f };
+        UI::GradientRound(tag, 8.0f, Color{ 16, 185, 129, 245 }, Color{ 5, 150, 105, 245 });
+        UI::Rim(tag, 8.0f, Color{ 253, 224, 71, 255 }, WHITE, Color{ 6, 95, 70, 255 });
+        Theme::text3D("PLAY", { pos.x, pos.y - 43.0f + bounce }, 12, WHITE, BLACK, 1.5f, BLACK, true, true);
+
+        // Hover ring on any node under cursor
+        if (hoveredNodeIdx >= 0 && hoveredNodeIdx < (int)nodes.size()) {
+            Vector2 hp{ nodes[hoveredNodeIdx].x, nodes[hoveredNodeIdx].y };
+            DrawCircle((int)hp.x, (int)hp.y, 26.0f, Color{ 255, 255, 255, 55 });
+            DrawCircleLines((int)hp.x, (int)hp.y, 28.0f, WHITE);
+        }
+    }
+
     void drawGraduationAcademyMap(int w, int h) {
         float t = Theme::timeNow;
 
-        // 1. Clean Academy Map Backdrop
-        if (!UIAssets::drawStretch("image2_graduation_academy_map_assets/map_background_clean.png",
+        if (!UIAssets::drawStretch("map_academy/map_background_clean.png",
                                    Rectangle{ 0, 0, (float)w, (float)h })) {
             DrawRectangleGradientV(0, 0, w, h, Color{ 56, 189, 248, 255 }, Color{ 186, 230, 253, 255 });
         }
 
-        // 2. Giant Open Book Bridge, Clock Tower, and Grand Blue Castle
-        UIAssets::drawCentered("image2_graduation_academy_map_assets/bridge_giant_open_book.png",
-                               { 255, 405 }, 255, 165);
-        UIAssets::drawCentered("image2_graduation_academy_map_assets/building_clock_tower.png",
-                               { 102, 235 }, 145, 225);
-        UIAssets::drawCentered("image2_graduation_academy_map_assets/building_big_blue_castle.png",
-                               { 312, 165 }, 290, 245);
-
-        // 3. Waving Castle Flags atop the Grand Blue Castle
         bool flagPose2 = ((int)(t * 4.5f) % 2) == 1;
         float flagTilt = std::sin(t * 5.0f) * 6.0f;
         const char* flagKey = flagPose2
-            ? "image2_graduation_academy_map_assets/prop_castle_flag_pose2.png"
-            : "image2_graduation_academy_map_assets/prop_castle_flag_pose1.png";
-        UIAssets::drawCentered(flagKey, { 248, 68 }, 54, 54, flagTilt);
-        UIAssets::drawCentered(flagKey, { 372, 68 }, 54, 54, -flagTilt);
+            ? "map_academy/prop_castle_flag_pose2.png"
+            : "map_academy/prop_castle_flag_pose1.png";
+        UIAssets::drawCentered(flagKey, { 248, 74 }, 48, 48, flagTilt);
+        UIAssets::drawCentered(flagKey, { 372, 74 }, 48, 48, -flagTilt);
 
-        // 4. Spinning Globe, Chalkboard, ABC Blocks & Flying Magic Books
-        float globeTilt = std::sin(t * 2.8f) * 12.0f;
-        UIAssets::drawCentered("image2_graduation_academy_map_assets/prop_globe_full.png",
-                               { 442, 650 }, 118, 135, globeTilt);
-        UIAssets::drawCentered("image2_graduation_academy_map_assets/prop_chalkboard.png",
-                               { 95, 515 }, 135, 120);
-        UIAssets::drawCentered("image2_graduation_academy_map_assets/island_abc_blocks.png",
-                               { 88, 795 }, 135, 115);
+        float globeTilt = std::sin(t * 2.8f) * 10.0f;
+        UIAssets::drawCentered("map_academy/prop_globe_full.png",
+                               { 156, 236 }, 88, 92, globeTilt);
 
         bool bookPose2 = ((int)(t * 5.2f) % 2) == 1;
         const char* bookKey = bookPose2
-            ? "image2_graduation_academy_map_assets/prop_flying_book_pose2.png"
-            : "image2_graduation_academy_map_assets/prop_flying_book_pose1.png";
-        UIAssets::drawCentered(bookKey, { 125, 355 + std::sin(t * 4.0f) * 9.0f }, 78, 68, std::sin(t * 3.5f) * 8.0f);
-        UIAssets::drawCentered(bookKey, { 435, 365 + std::cos(t * 3.8f) * 9.0f }, 74, 64, std::cos(t * 3.2f) * -8.0f);
+            ? "map_academy/prop_flying_book_pose2.png"
+            : "map_academy/prop_flying_book_pose1.png";
+        UIAssets::drawCentered(bookKey, { 105, 355 + std::sin(t * 4.0f) * 8.0f }, 68, 58, std::sin(t * 3.5f) * 8.0f);
+        UIAssets::drawCentered(bookKey, { 445, 365 + std::cos(t * 3.8f) * 8.0f }, 66, 56, std::cos(t * 3.2f) * -8.0f);
 
-        // 5. Golden Path Connecting all 14 Scrolls & Telegrams up to the Grand Blue Castle
         const auto& nodes = units[3].nodes;
         for (size_t i = 0; i + 1 < nodes.size(); ++i) {
             DrawLineEx({ nodes[i].x, nodes[i].y }, { nodes[i + 1].x, nodes[i + 1].y },
-                       8.0f, Color{ 251, 191, 36, 175 });
+                       7.0f, Color{ 251, 191, 36, 175 });
             DrawLineEx({ nodes[i].x, nodes[i].y }, { nodes[i + 1].x, nodes[i + 1].y },
-                       3.5f, Color{ 254, 249, 195, 235 });
+                       3.0f, Color{ 254, 249, 195, 235 });
         }
 
-        // Draw all 14 Numbered Scrolls (scroll_step_01.png .. scroll_step_14.png)
         for (size_t i = 0; i < nodes.size(); ++i) {
             char scrollKey[128];
             std::snprintf(scrollKey, sizeof(scrollKey),
-                          "image2_graduation_academy_map_assets/numbered_scrolls_1_to_14/scroll_step_%02d.png",
+                          "map_academy/scrolls/scroll_step_%02d.png",
                           (int)i + 1);
-            float pulse = ((int)i == (int)std::round(boyProgress)) ? (1.0f + 0.08f * std::sin(t * 5.0f)) : 1.0f;
-            if (!UIAssets::drawCentered(scrollKey, { nodes[i].x, nodes[i].y }, 86 * pulse, 64 * pulse)) {
-                UIAssets::drawCentered("image2_graduation_academy_map_assets/prop_scroll_and_telegram_step.png",
-                                       { nodes[i].x, nodes[i].y }, 86 * pulse, 64 * pulse);
-                Theme::text3D(std::to_string(i + 1), { nodes[i].x, nodes[i].y - 4.0f },
-                              18, Color{ 120, 53, 15, 255 }, WHITE, 2.0f, BLANK, true, true);
-            }
+            bool isHov = ((int)i == hoveredNodeIdx);
+            float pulse = ((int)i == (int)std::round(boyProgress)) ? (1.0f + 0.08f * std::sin(t * 5.0f)) : (isHov ? 1.12f : 1.0f);
+            UIAssets::drawCentered(scrollKey, { nodes[i].x, nodes[i].y }, 82 * pulse, 62 * pulse);
         }
 
-        // 6. Animated Owl Flapping Above the Academy
         bool owlFlap = ((int)(t * 4.8f) % 2) == 1;
         const char* owlKey = owlFlap
-            ? "image2_graduation_academy_map_assets/char_owl_pose2_flapping.png"
-            : "image2_graduation_academy_map_assets/char_owl_pose1_idle.png";
-        UIAssets::drawCentered(owlKey, { 418, 225 + std::sin(t * 3.6f) * 10.0f }, 96, 96);
+            ? "map_academy/char_owl_pose2_flapping.png"
+            : "map_academy/char_owl_pose1_idle.png";
+        UIAssets::drawCentered(owlKey, { 95, 815 + std::sin(t * 3.6f) * 6.0f }, 78, 86);
 
-        // 7. Animated Boy Student Moving Across Scrolls (1 -> 14) to the Blue Castle
         int idxA = std::clamp((int)std::floor(boyProgress), 0, 13);
         int idxB = std::clamp(idxA + 1, 0, 13);
         float frac = boyProgress - (float)idxA;
         Vector2 boyPos{
             nodes[idxA].x + (nodes[idxB].x - nodes[idxA].x) * frac,
-            nodes[idxA].y + (nodes[idxB].y - nodes[idxA].y) * frac - 34.0f
+            nodes[idxA].y + (nodes[idxB].y - nodes[idxA].y) * frac - 32.0f
         };
-        float hopY = std::abs(std::sin(t * 5.5f)) * -12.0f;
+        float hopY = std::abs(std::sin(t * 5.5f)) * -10.0f;
         bool boyJump = ((int)(t * 4.0f) % 2) == 1 || boyMarching;
         const char* boyKey = boyJump
-            ? "image2_graduation_academy_map_assets/char_boy_pose2_jumping.png"
-            : "image2_graduation_academy_map_assets/char_boy_pose1_cheering.png";
-        UIAssets::drawCentered(boyKey, { boyPos.x, boyPos.y + hopY }, 105, 118);
-
-        // 8. Graduation Academy Banner
-        UIAssets::drawCentered("image2_graduation_academy_map_assets/prop_graduation_academy_banner.png",
-                               { 270, 132 }, 320, 66);
+            ? "map_academy/char_boy_pose2_jumping.png"
+            : "map_academy/char_boy_pose1_cheering.png";
+        UIAssets::drawCentered(boyKey, { boyPos.x, boyPos.y + hopY }, 92, 108);
     }
 
     void drawSafetyFoodIsland(int w, int h) {
         float t = Theme::timeNow;
-        if (!UIAssets::drawStretch("assets/scenery/clean_safety.png", Rectangle{ 0, 0, (float)w, (float)h })) {
-            DrawRectangleGradientV(0, 0, w, h, Color{ 30, 136, 229, 255 }, Color{ 2, 119, 189, 255 });
+        if (!UIAssets::drawFrameSequence("map_safety_living/frame_", 16, t, 10.0f,
+                                         Rectangle{ 0, 0, (float)w, (float)h }, WHITE, true)) {
+            UIAssets::drawStretch("assets/scenery/clean_safety.png", Rectangle{ 0, 0, (float)w, (float)h });
         }
-
-        // Animated Chef & Dog Inspector from food_pyramid_island_ui_kit
-        float chefBob = std::sin(t * 3.2f) * 5.0f;
-        UIAssets::drawCentered("food_pyramid_island_ui_kit/02_characters_animated/chef_mascot_waving.png",
-                               { 355, 455 + chefBob }, 125, 135);
-        UIAssets::drawCentered("food_pyramid_island_ui_kit/02_characters_animated/dog_inspector_full.png",
-                               { 420, 645 + std::cos(t * 3.5f) * 4.0f }, 105, 105);
-
-        const auto& nodes = units[1].nodes;
-        for (size_t i = 0; i < nodes.size(); ++i) {
-            char key[128];
-            std::snprintf(key, sizeof(key),
-                          "food_pyramid_island_ui_kit/04_level_buttons_1_to_10/level_%02d_button.png",
-                          (int)i + 1);
-            if (!UIAssets::drawCentered(key, { nodes[i].x, nodes[i].y }, 68, 68)) {
-                DrawCircleV({ nodes[i].x, nodes[i].y }, 26.0f, Color{ 245, 158, 11, 255 });
-                Theme::text3D(std::to_string(i + 1), { nodes[i].x, nodes[i].y }, 20, WHITE, BLACK, 2.0f, BLACK, true, true);
-            }
-        }
+        drawNodeIndicators(units[1].nodes, t);
     }
 
     void drawCosmicSpaceIsland(int w, int h) {
         float t = Theme::timeNow;
-        if (!UIAssets::drawStretch("assets/scenery/clean_space.png", Rectangle{ 0, 0, (float)w, (float)h })) {
-            DrawRectangleGradientV(0, 0, w, h, Color{ 11, 15, 41, 255 }, Color{ 46, 16, 101, 255 });
+        if (!UIAssets::drawFrameSequence("map_space_living/frame_", 16, t, 10.0f,
+                                         Rectangle{ 0, 0, (float)w, (float)h }, WHITE, true)) {
+            UIAssets::drawStretch("assets/scenery/clean_space.png", Rectangle{ 0, 0, (float)w, (float)h });
         }
-
-        // Animated Astronaut, Rocket & Satellite from cosmic_space_observatory_ui_kit
-        UIAssets::drawCentered("cosmic_space_observatory_ui_kit/03_characters_and_vehicles/astronaut_with_star_flag.png",
-                               { 295, 175 + std::sin(t * 2.8f) * 7.0f }, 120, 120);
-        UIAssets::drawCentered("cosmic_space_observatory_ui_kit/03_characters_and_vehicles/space_satellite_solar_wings.png",
-                               { 435, 215 + std::cos(t * 2.4f) * 9.0f }, 115, 95, std::sin(t * 1.8f) * 6.0f);
-
-        const auto& nodes = units[2].nodes;
-        for (size_t i = 0; i < nodes.size(); ++i) {
-            char key[128];
-            std::snprintf(key, sizeof(key),
-                          "cosmic_space_observatory_ui_kit/04_level_nodes_01_to_10/node_%02d_cyan.png",
-                          (int)i + 1);
-            if (!UIAssets::drawCentered(key, { nodes[i].x, nodes[i].y }, 68, 68)) {
-                DrawCircleV({ nodes[i].x, nodes[i].y }, 26.0f, Color{ 6, 182, 212, 255 });
-                Theme::text3D(std::to_string(i + 1), { nodes[i].x, nodes[i].y }, 20, WHITE, BLACK, 2.0f, BLACK, true, true);
-            }
-        }
+        drawNodeIndicators(units[2].nodes, t);
     }
 
     void drawEthicsIsland(int w, int h) {
-        if (!UIAssets::drawStretch("assets/scenery/clean_ethics.png", Rectangle{ 0, 0, (float)w, (float)h })) {
-            DrawRectangleGradientV(0, 0, w, h, Color{ 174, 226, 255, 255 }, Color{ 243, 232, 255, 255 });
+        float t = Theme::timeNow;
+        if (!UIAssets::drawFrameSequence("map_ethics_living/frame_", 16, t, 10.0f,
+                                         Rectangle{ 0, 0, (float)w, (float)h }, WHITE, true)) {
+            UIAssets::drawStretch("assets/scenery/clean_ethics.png", Rectangle{ 0, 0, (float)w, (float)h });
         }
-        const auto& nodes = units[0].nodes;
-        for (size_t i = 0; i < nodes.size(); ++i) {
-            Color c = (i == 0) ? Color{ 14, 165, 233, 255 } : Color{ 148, 163, 184, 255 };
-            DrawCircleV({ nodes[i].x, nodes[i].y + 4.0f }, 27.0f, Color{ 15, 23, 42, 140 });
-            DrawCircleV({ nodes[i].x, nodes[i].y }, 26.0f, c);
-            DrawCircleLines((int)nodes[i].x, (int)nodes[i].y, 26.0f, WHITE);
-            Theme::text3D(std::to_string(i + 1), { nodes[i].x, nodes[i].y }, 20, WHITE, BLACK, 2.0f, BLACK, true, true);
-        }
+        drawNodeIndicators(units[0].nodes, t);
     }
 
     void draw(int w, int h) {
@@ -338,39 +304,41 @@ public:
         else if (unit == 2) drawCosmicSpaceIsland(w, h);
         else drawGraduationAcademyMap(w, h);
 
-        // Top HUD Header Bar
-        UIAssets::drawFit("cosmic_space_observatory_ui_kit/01_hud_bars_and_buttons/hud_top_star_progress_bar.png",
-                          Rectangle{ 14, 10, 260, 52 });
-        UIAssets::drawFit("cosmic_space_observatory_ui_kit/01_hud_bars_and_buttons/hud_top_coin_counter_pill.png",
-                          Rectangle{ 310, 12, 145, 48 });
-        Theme::text3D(std::to_string(Theme::coins), { 398, 36 }, 20, Color{ 253, 224, 71, 255 }, BLACK, 2.0f, BLACK, true, true);
+        Vector2 m = Input::Mouse();
 
-        // 4 Unit Tabs (Ethics, Safety, Space, Academy 1-14)
+        // Top Unit Selector Bar
         const char* tabLabels[4] = { "1.ETHICS", "2.SAFETY", "3.SPACE", "4.ACADEMY" };
         for (int u = 0; u < 4; ++u) {
-            Rectangle tabRec{ 12.0f + u * 130.0f, 72.0f, 124.0f, 38.0f };
-            Color topC = (unit == u) ? Color{ 251, 191, 36, 255 } : Color{ 30, 41, 59, 215 };
-            Color botC = (unit == u) ? Color{ 217, 119, 6, 255 } : Color{ 15, 23, 42, 215 };
-            UI::GradientRound(tabRec, 14.0f, topC, botC);
-            UI::Rim(tabRec, 14.0f, WHITE, WHITE, Color{ 100, 116, 139, 255 });
-            Theme::text3D(tabLabels[u], { tabRec.x + 62.0f, tabRec.y + 19.0f },
-                          15, WHITE, BLACK, 2.0f, BLACK, true, true);
+            Rectangle tabRec{ 10.0f + u * 131.0f, 10.0f, 125.0f, 36.0f };
+            bool hov = CheckCollisionPointRec(m, tabRec);
+            Color topC = (unit == u) ? Color{ 251, 191, 36, 245 } : (hov ? Color{ 51, 65, 85, 235 } : Color{ 15, 23, 42, 205 });
+            Color botC = (unit == u) ? Color{ 217, 119, 6, 245 } : Color{ 30, 41, 59, 205 };
+            UI::GradientRound(tabRec, 12.0f, topC, botC);
+            UI::Rim(tabRec, 12.0f, WHITE, WHITE, Color{ 100, 116, 139, 220 });
+            Theme::text3D(tabLabels[u], { tabRec.x + 62.5f, tabRec.y + 18.0f },
+                          14, WHITE, BLACK, 2.0f, BLACK, true, true);
         }
 
-        // Bottom Navigation Bar (Home, Shop, Streak 1-7, March/Next)
-        const char* botLabels[4] = { "HOME", "SHOP", "STREAK", (unit == 3) ? "GO 1->14" : "NEXT MAP" };
-        Color botCols[4] = {
-            Color{ 16, 185, 129, 255 },
-            Color{ 124, 58, 237, 255 },
-            Color{ 234, 88, 12, 255 },
-            Color{ 37, 99, 235, 255 }
+        // Bottom Corner Navigation Pills
+        struct NavPill {
+            Rectangle r;
+            const char* label;
+            Color col;
+        };
+        NavPill pills[4] = {
+            { { 10, 912, 92, 40 }, "HOME", Color{ 16, 185, 129, 240 } },
+            { { 108, 912, 86, 40 }, "SHOP", Color{ 124, 58, 237, 240 } },
+            { { 346, 912, 88, 40 }, "STREAK", Color{ 234, 88, 12, 240 } },
+            { { 440, 912, 90, 40 }, (unit == 3) ? "GO 1->14" : "NEXT MAP", Color{ 37, 99, 235, 240 } }
         };
         for (int i = 0; i < 4; ++i) {
-            Rectangle r{ 14.0f + i * 128.0f, 892.0f, 120.0f, 54.0f };
-            UI::DropShadow(r, 16.0f, 4.0f, 0.35f, 2.0f);
-            UI::GradientRound(r, 16.0f, botCols[i], Color{ 15, 23, 42, 255 });
-            UI::Rim(r, 16.0f, Color{ 251, 191, 36, 255 }, WHITE, Color{ 180, 83, 9, 255 });
-            Theme::text3D(botLabels[i], { r.x + 60.0f, r.y + 27.0f }, 16, WHITE, BLACK, 2.0f, BLACK, true, true);
+            Rectangle dr = pills[i].r;
+            if (CheckCollisionPointRec(m, dr)) dr.y -= 2.0f;
+            UI::DropShadow(dr, 14.0f, 3.0f, 0.35f, 2.0f);
+            UI::GradientRound(dr, 14.0f, pills[i].col, Color{ 15, 23, 42, 240 });
+            UI::Rim(dr, 14.0f, Color{ 251, 191, 36, 255 }, WHITE, Color{ 180, 83, 9, 255 });
+            Theme::text3D(pills[i].label, { dr.x + dr.width * 0.5f, dr.y + 20.0f },
+                          13, WHITE, BLACK, 2.0f, BLACK, true, true);
         }
 
         Theme::drawParticles();

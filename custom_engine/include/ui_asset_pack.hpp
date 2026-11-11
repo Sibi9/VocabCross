@@ -1,12 +1,15 @@
 #pragma once
 
 #include "raylib.h"
+#include "theme.hpp"
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdio>
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -31,38 +34,43 @@ inline std::string normalizeSlashes(std::string s) {
 
 inline void indexDirectory(const std::filesystem::path& rootDir) {
     std::error_code ec;
-    if (!std::filesystem::exists(rootDir, ec) || !std::filesystem::is_directory(rootDir, ec)) return;
+    if (!std::filesystem::exists(rootDir, ec) || ec) return;
+    if (!std::filesystem::is_directory(rootDir, ec) || ec) return;
 
-    try {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(
-                 rootDir, std::filesystem::directory_options::skip_permission_denied, ec)) {
-            if (ec) { ec.clear(); continue; }
-            std::error_code rec;
-            if (!entry.is_regular_file(rec) || rec) continue;
+    auto opts = std::filesystem::directory_options::skip_permission_denied;
+    std::filesystem::recursive_directory_iterator it(rootDir, opts, ec);
+    std::filesystem::recursive_directory_iterator end;
+    if (ec) return;
 
-            std::string pathStr = entry.path().string();
-            if (pathStr.find(".git") != std::string::npos) continue;
+    while (it != end) {
+        std::error_code fileEc;
+        bool isReg = it->is_regular_file(fileEc);
+        if (!fileEc && isReg) {
+            const auto& p = it->path();
+            auto ext = toLower(p.extension().string());
+            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
+                std::string fullPath = normalizeSlashes(p.string());
+                std::string baseName = toLower(p.filename().string());
+                std::string relPath = toLower(normalizeSlashes(p.lexically_relative(rootDir).string()));
 
-            auto ext = toLower(entry.path().extension().string());
-            if (ext != ".png" && ext != ".jpg" && ext != ".jpeg") continue;
-
-            std::string fullPath = normalizeSlashes(pathStr);
-            std::string baseName = toLower(entry.path().filename().string());
-            std::error_code relEc;
-            std::string relPath = toLower(normalizeSlashes(std::filesystem::relative(entry.path(), rootDir, relEc).string()));
-
-            // Store by relative path, parent+filename, and basename
-            gPathIndex[relPath] = fullPath;
-            if (gPathIndex.find(baseName) == gPathIndex.end()) {
-                gPathIndex[baseName] = fullPath;
-            }
-            auto parentName = toLower(entry.path().parent_path().filename().string());
-            if (!parentName.empty()) {
-                gPathIndex[parentName + "/" + baseName] = fullPath;
+                if (!relPath.empty() && gPathIndex.find(relPath) == gPathIndex.end()) {
+                    gPathIndex[relPath] = fullPath;
+                }
+                if (!baseName.empty() && gPathIndex.find(baseName) == gPathIndex.end()) {
+                    gPathIndex[baseName] = fullPath;
+                }
+                auto parentName = toLower(p.parent_path().filename().string());
+                if (!parentName.empty() && !baseName.empty()) {
+                    std::string parentKey = parentName + "/" + baseName;
+                    if (gPathIndex.find(parentKey) == gPathIndex.end()) {
+                        gPathIndex[parentKey] = fullPath;
+                    }
+                }
             }
         }
-    } catch (...) {
-        // Catch any filesystem exception safely
+        std::error_code incEc;
+        it.increment(incEc);
+        if (incEc) break;
     }
 }
 
@@ -71,21 +79,22 @@ inline void init() {
     gInitialized = true;
 
     const std::vector<std::string> candidateRoots = {
+        "assets/ui_kits",
+        "../assets/ui_kits",
+        "custom_engine/assets/ui_kits",
+        "assets",
+        "../assets",
+        "custom_engine/assets",
         "ui assest",
         "../ui assest",
-        "../../ui assest",
-        "assets/ui assest",
-        "../assets/ui assest",
         "ui_assets",
-        "../ui_assets",
-        "assets/ui_assets",
-        "assets"
+        "../ui_assets"
     };
 
     for (const auto& root : candidateRoots) {
         indexDirectory(root);
     }
-    std::cout << "[UIAssets] Indexed " << gPathIndex.size() << " asset keys from ui assest." << std::endl;
+    std::cout << "[UIAssets] Indexed " << gPathIndex.size() << " clean UI asset keys." << std::endl;
 }
 
 inline void unloadAll() {
@@ -102,51 +111,22 @@ inline void unloadAll() {
 inline std::string resolvePath(const std::string& key) {
     if (!gInitialized) init();
     std::string norm = toLower(normalizeSlashes(key));
+
+    if (FileExists(key.c_str())) return key;
+    std::string inAssets = "assets/" + norm;
+    if (FileExists(inAssets.c_str())) return inAssets;
+    std::string inUiKits = "assets/ui_kits/" + norm;
+    if (FileExists(inUiKits.c_str())) return inUiKits;
+
     auto it = gPathIndex.find(norm);
     if (it != gPathIndex.end()) return it->second;
 
-    // Fallback 1: search by suffix match
     for (const auto& kv : gPathIndex) {
         if (kv.first.size() >= norm.size() &&
             kv.first.compare(kv.first.size() - norm.size(), norm.size(), norm) == 0) {
             return kv.second;
         }
     }
-
-    // Fallback 2: search by filename without directory
-    auto slash = norm.find_last_of('/');
-    std::string base = (slash != std::string::npos) ? norm.substr(slash + 1) : norm;
-    auto bit = gPathIndex.find(base);
-    if (bit != gPathIndex.end()) return bit->second;
-
-    // Intelligent aliases for home screen & trio assets
-    static const std::map<std::string, std::string> aliases = {
-        { "emblem_bac_vocab_quest_crest.png", "prop_graduation_academy_banner.png" },
-        { "btn_play_emerald_gold_with_text.png", "btn_next_level_cta.png" },
-        { "scholar_owl_body_clean.png", "char_professor_owl_pose_a.png" },
-        { "scholar_owl_waving_wing.png", "char_owl_pose2_flapping.png" },
-        { "cheering_fox_full_rgba.png", "fox_base_body_clean.png" },
-        { "astronaut_body_armless.png", "astronaut_armless_pedestal_base.png" },
-        { "astronaut_left_arm.png", "astronaut_left_arm_clean.png" },
-        { "astronaut_right_arm.png", "astronaut_right_arm_clean.png" },
-        { "island_01_observatory_telescope.png", "landmark_02_observatory_dome_and_telescope.png" },
-        { "island_02_classical_greek_temple.png", "temple_courthouse.png" },
-        { "island_03_open_book_fairytale_castle.png", "bridge_giant_open_book.png" },
-        { "flying_book_01_cream.png", "prop_flying_book_pose1.png" },
-        { "flying_book_02_purple.png", "prop_flying_book_pose2.png" },
-        { "flying_book_03_red.png", "prop_flying_book_pose1.png" },
-        { "hud_avatar_lv1_badge.png", "badge_streak_12_days.png" },
-        { "hud_heart_life_bar.png", "hud_progress_bar_pencil_complete.png" },
-        { "btn_sound_speaker.png", "btn_audio_speaker.png" },
-        { "btn_settings_gear.png", "btn_settings_blue_gear.png" }
-    };
-
-    auto ait = aliases.find(base);
-    if (ait != aliases.end()) {
-        auto fit = gPathIndex.find(ait->second);
-        if (fit != gPathIndex.end()) return fit->second;
-    }
-
     return "";
 }
 
@@ -210,30 +190,15 @@ inline bool drawCentered(const std::string& key, Vector2 center, float w, float 
     return true;
 }
 
-inline bool drawPivoted(const std::string& key, Vector2 worldPivot, Vector2 normPivot,
-                        float w, float h, float rotationDeg, Color tint = WHITE) {
-    Texture2D t = tex(key);
-    if (t.id == 0 || t.width <= 0 || t.height <= 0) return false;
-    float scale = std::min(w / (float)t.width, h / (float)t.height);
-    float dw = t.width * scale;
-    float dh = t.height * scale;
-    Rectangle dst{ worldPivot.x, worldPivot.y, dw, dh };
-    Vector2 origin{ dw * normPivot.x, dh * normPivot.y };
-    DrawTexturePro(t, Rectangle{ 0, 0, (float)t.width, (float)t.height },
-                   dst, origin, rotationDeg, tint);
-    return true;
-}
-
-// Plays a numbered frame sequence like "06_frames_master_fox/frame_" (01..60)
 inline bool drawFrameSequence(const std::string& folderAndPrefix, int frameCount,
-                              float timeSec, float fps, Rectangle dst, Color tint = WHITE) {
+                              float timeSec, float fps, Rectangle dst, Color tint = WHITE,
+                              bool stretch = false) {
     int idx = ((int)(timeSec * fps) % std::max(1, frameCount)) + 1;
     char buf[256];
     std::snprintf(buf, sizeof(buf), "%s%02d.png", folderAndPrefix.c_str(), idx);
-    return drawFit(buf, dst, tint);
+    return stretch ? drawStretch(buf, dst, tint) : drawFit(buf, dst, tint);
 }
 
-// Draws any English word using the A-Z letter tile PNGs from a kit
 inline bool drawWordTiles(const std::string& prefix, const std::string& word,
                           Vector2 center, float maxRowWidth, float desiredSize, float gap = 4.0f) {
     std::string clean;
@@ -258,15 +223,43 @@ inline bool drawWordTiles(const std::string& prefix, const std::string& word,
         Rectangle r{ startX + i * (tileSize + gap), y, tileSize, tileSize };
         if (drawFit(key, r)) {
             anyDrawn = true;
-        } else {
-            std::string fb1 = "letter_tiles_a_z/tile_" + std::string(1, clean[i]) + ".png";
-            std::string fb2 = "alphabet_tiles_a_to_z/letter_" + std::string(1, clean[i]) + ".png";
-            if (drawFit(fb1, r) || drawFit(fb2, r)) {
-                anyDrawn = true;
-            }
         }
     }
     return anyDrawn;
+}
+
+inline void drawWrappedText3D(const std::string& text, Rectangle box, int fontSize,
+                              Color fillCol, Color strokeCol, float strokeW = 2.0f,
+                              bool centerLines = true) {
+    std::istringstream iss(text);
+    std::string word;
+    std::vector<std::string> lines;
+    std::string currentLine;
+    int maxCharsPerLine = std::max(14, (int)(box.width / (fontSize * 0.52f)));
+
+    while (iss >> word) {
+        if (currentLine.empty()) {
+            currentLine = word;
+        } else if ((int)(currentLine.size() + 1 + word.size()) <= maxCharsPerLine) {
+            currentLine += " " + word;
+        } else {
+            lines.push_back(currentLine);
+            currentLine = word;
+        }
+    }
+    if (!currentLine.empty()) lines.push_back(currentLine);
+
+    float lineH = fontSize + 6.0f;
+    float totalH = lines.size() * lineH;
+    float startY = box.y + std::max(0.0f, (box.height - totalH) * 0.5f) + fontSize * 0.5f;
+
+    for (size_t i = 0; i < lines.size(); ++i) {
+        Vector2 pos{
+            centerLines ? (box.x + box.width * 0.5f) : box.x,
+            startY + i * lineH
+        };
+        Theme::text3D(lines[i], pos, fontSize, fillCol, strokeCol, strokeW, BLACK, centerLines, true);
+    }
 }
 
 } // namespace UIAssets

@@ -26,9 +26,11 @@ public:
 
     VictoryModal victoryModal;
     std::string targetWord = "GALAXY";
+    std::string currentGuess;
     std::vector<WheelNode> nodes;
     std::vector<int> currentPath;
     int currentLevelIdx = 0;
+    bool dragging = false;
 
     void init() {
         victoryModal.init();
@@ -39,6 +41,7 @@ public:
         if (gGameData.levels.empty()) return;
         currentLevelIdx = std::clamp(index, 0, (int)gGameData.levels.size() - 1);
         targetWord = gGameData.levels[currentLevelIdx].word.word;
+        currentGuess.clear();
         victoryModal.hide();
         buildWheel();
     }
@@ -46,9 +49,12 @@ public:
     void buildWheel() {
         nodes.clear();
         currentPath.clear();
+        currentGuess.clear();
+        dragging = false;
+
         int n = std::max(3, (int)targetWord.size());
-        Vector2 center{ 270.0f, 742.0f };
-        float radius = 112.0f;
+        Vector2 center{ 270.0f, 735.0f };
+        float radius = 108.0f;
         for (int i = 0; i < n; ++i) {
             float ang = -PI * 0.5f + (2.0f * PI * i) / (float)n;
             WheelNode nd;
@@ -57,10 +63,18 @@ public:
             nd.selected = false;
             nodes.push_back(nd);
         }
-        // Pre-connect 3 nodes for visual laser demonstration
-        if (nodes.size() >= 3) {
-            currentPath = { 0, 1, 2 };
-            nodes[0].selected = nodes[1].selected = nodes[2].selected = true;
+    }
+
+    void checkWord() {
+        if (currentGuess.size() < targetWord.size()) return;
+        if (currentGuess == targetWord && !gGameData.levels.empty()) {
+            gGameData.completeLevel(currentLevelIdx, 3);
+            victoryModal.show(gGameData.levels[currentLevelIdx].word);
+        } else {
+            gAudio.playPop();
+            currentPath.clear();
+            currentGuess.clear();
+            for (auto& nd : nodes) nd.selected = false;
         }
     }
 
@@ -78,81 +92,114 @@ public:
             return -1;
         }
 
+        Vector2 m = Input::Mouse();
+
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            Vector2 m = Input::Mouse();
-            if (CheckCollisionPointRec(m, Rectangle{ 458, 18, 60, 60 })) {
+            if (CheckCollisionPointRec(m, Rectangle{ 458, 12, 68, 68 })) {
                 gAudio.playClick();
                 return Nav::SCREEN_MAP;
             }
-            // Hint lightbulb (bottom right) completes word and opens VictoryModal
-            if (CheckCollisionPointCircle(m, { 468, 900 }, 38.0f)) {
-                if (!gGameData.levels.empty()) {
-                    gGameData.completeLevel(currentLevelIdx, 3);
-                    victoryModal.show(gGameData.levels[currentLevelIdx].word);
+            // Shuffle button (bottom-left)
+            if (CheckCollisionPointCircle(m, { 68, 896 }, 40.0f)) {
+                currentPath.clear();
+                currentGuess.clear();
+                for (auto& nd : nodes) nd.selected = false;
+                gAudio.playClick();
+                return -1;
+            }
+            // Hint lightbulb (bottom-right) reveals next letter
+            if (CheckCollisionPointCircle(m, { 472, 896 }, 40.0f)) {
+                if (currentGuess.size() < targetWord.size()) {
+                    char nextChar = (char)std::toupper((unsigned char)targetWord[currentGuess.size()]);
+                    for (size_t i = 0; i < nodes.size(); ++i) {
+                        if (!nodes[i].selected && nodes[i].letter == nextChar) {
+                            nodes[i].selected = true;
+                            currentPath.push_back((int)i);
+                            currentGuess.push_back(nextChar);
+                            gAudio.playPop();
+                            checkWord();
+                            break;
+                        }
+                    }
                 }
                 return -1;
             }
-            // Clicking any wheel letter
+
             for (size_t i = 0; i < nodes.size(); ++i) {
-                if (CheckCollisionPointCircle(m, nodes[i].pos, 34.0f)) {
-                    nodes[i].selected = true;
-                    currentPath.push_back((int)i);
-                    gAudio.playPop();
-                    if (currentPath.size() >= nodes.size() && !gGameData.levels.empty()) {
-                        gGameData.completeLevel(currentLevelIdx, 3);
-                        victoryModal.show(gGameData.levels[currentLevelIdx].word);
+                if (CheckCollisionPointCircle(m, nodes[i].pos, 36.0f)) {
+                    dragging = true;
+                    if (!nodes[i].selected) {
+                        nodes[i].selected = true;
+                        currentPath.push_back((int)i);
+                        currentGuess.push_back(nodes[i].letter);
+                        gAudio.playPop();
+                        checkWord();
                     }
                     break;
                 }
             }
         }
+
+        if (dragging && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            for (size_t i = 0; i < nodes.size(); ++i) {
+                if (!nodes[i].selected && CheckCollisionPointCircle(m, nodes[i].pos, 32.0f)) {
+                    nodes[i].selected = true;
+                    currentPath.push_back((int)i);
+                    currentGuess.push_back(nodes[i].letter);
+                    gAudio.playPop();
+                    checkWord();
+                    break;
+                }
+            }
+        }
+
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            dragging = false;
+        }
+
         return -1;
     }
 
     void draw(int w, int h) {
         float t = Theme::timeNow;
 
-        // 1. Cosmic Observatory Backdrop + Telescope on Tripod
-        DrawRectangleGradientV(0, 0, w, h, Color{ 10, 17, 40, 255 }, Color{ 28, 20, 72, 255 });
-        UIAssets::drawCentered("astronomy_galaxy_word_wheel_ui_kit/05_word_wheel_and_screen_containers/bg_observatory_telescope_on_tripod.png",
-                               { 88, 445 }, 165, 210);
+        if (!UIAssets::drawStretch("wheel/bg_wheel_clean.png", Rectangle{ 0, 0, (float)w, (float)h })) {
+            DrawRectangleGradientV(0, 0, w, h, Color{ 10, 17, 40, 255 }, Color{ 28, 20, 72, 255 });
+        }
 
-        // 2. Top Header Banner, Coin Pill & Settings Gear
-        UIAssets::drawFit("astronomy_galaxy_word_wheel_ui_kit/01_hud_and_action_buttons/hud_340_coin_counter_pill.png",
-                          Rectangle{ 16, 20, 128, 48 });
-        UIAssets::drawFit("astronomy_galaxy_word_wheel_ui_kit/05_word_wheel_and_screen_containers/header_level_42_astronomy_3d_banner.png",
-                          Rectangle{ 148, 12, 295, 88 });
-        UIAssets::drawFit("astronomy_galaxy_word_wheel_ui_kit/01_hud_and_action_buttons/btn_settings_blue_gear.png",
-                          Rectangle{ 458, 18, 60, 60 });
+        int n = std::max(3, (int)targetWord.size());
+        float tileSz = std::min(52.0f, 330.0f / (float)n);
+        float gap = 4.0f;
+        float totalW = n * (tileSz + gap) - gap;
+        float startX = 215.0f - totalW * 0.5f;
+        float rowY = 235.0f;
 
-        // 3. 3D White Crossword Grid Tiles (crossword_white_tile_A..Z)
-        int n = (int)targetWord.size();
-        float tileSz = std::min(58.0f, 380.0f / std::max(1, n));
-        float totalW = n * (tileSz + 5.0f) - 5.0f;
-        float startX = 250.0f - totalW * 0.5f;
         for (int i = 0; i < n; ++i) {
-            Rectangle r{ startX + i * (tileSz + 5.0f), 255.0f, tileSz, tileSz };
-            char c = (char)std::toupper((unsigned char)targetWord[i]);
-            std::string key = std::string("04_white_crossword_tiles_a_to_z/crossword_white_tile_") + c + ".png";
-            if (!UIAssets::drawFit(key, r)) {
-                UIAssets::drawFit("04_white_crossword_tiles_a_to_z/white_crossword_tile_blank.png", r);
+            Rectangle r{ startX + i * (tileSz + gap), rowY, tileSz, tileSz };
+            if (i < (int)currentGuess.size()) {
+                char c = (char)std::toupper((unsigned char)currentGuess[i]);
+                std::string key = std::string("wheel/white_tiles/crossword_white_tile_") + c + ".png";
+                UIAssets::drawFit(key, r);
+            } else {
+                UIAssets::drawFit("wheel/white_tiles/white_crossword_tile_blank.png", r);
             }
         }
 
-        // 4. Animated Celebrating Astronaut (60-frame master sequence)
-        Rectangle astroRec{ 345, 345, 185, 215 };
-        if (!UIAssets::drawFrameSequence("06_frames_master_astronaut/frame_", 60, t, 24.0f, astroRec)) {
-            UIAssets::drawFit("02_celebrating_astronaut_animations_and_layers/astronaut_armless_pedestal_base.png", astroRec);
-        }
+        Rectangle astroRec{ 346, 336, 178, 212 };
+        UIAssets::drawFrameSequence("wheel/astro_rgba/frame_", 16, t, 12.0f, astroRec);
 
-        // 5. Glowing Cyan & Gold Crystal Word Wheel + Laser Connection Line + 3D Wheel Letters
-        UIAssets::drawCentered("astronomy_galaxy_word_wheel_ui_kit/05_word_wheel_and_screen_containers/word_wheel_glowing_cyan_gold_blank.png",
-                               { 270, 742 }, 365, 365);
+        // Live Word Preview Pill above the wheel
+        if (!currentGuess.empty()) {
+            Rectangle pill{ 160, 520, 220, 40 };
+            UI::GradientRound(pill, 16.0f, Color{ 6, 182, 212, 230 }, Color{ 14, 116, 144, 230 });
+            UI::Rim(pill, 16.0f, WHITE, WHITE, Color{ 165, 243, 252, 255 });
+            Theme::text3D(currentGuess, { 270, 540 }, 22, WHITE, BLACK, 2.0f, BLACK, true, true);
+        }
 
         for (size_t i = 0; i + 1 < currentPath.size(); ++i) {
             Vector2 p1 = nodes[currentPath[i]].pos;
             Vector2 p2 = nodes[currentPath[i + 1]].pos;
-            DrawLineEx(p1, p2, 12.0f, Color{ 6, 182, 212, 140 });
+            DrawLineEx(p1, p2, 12.0f, Color{ 6, 182, 212, 145 });
             DrawLineEx(p1, p2, 5.0f, Color{ 165, 243, 252, 255 });
         }
 
@@ -162,17 +209,10 @@ public:
         };
         for (size_t i = 0; i < nodes.size(); ++i) {
             char c = nodes[i].letter;
-            std::string lKey = std::string("03_word_wheel_3d_letters_a_to_z/wheel_letter_") + c + wheelColors[(c - 'A') % 7];
-            if (!UIAssets::drawCentered(lKey, nodes[i].pos, 68, 68)) {
-                Theme::text3D(std::string(1, c), nodes[i].pos, 38, Color{ 253, 224, 71, 255 }, BLACK, 3.0f, BLACK, true, true);
-            }
+            std::string lKey = std::string("wheel/wheel_letters/wheel_letter_") + c + wheelColors[(c - 'A') % 7];
+            float sz = nodes[i].selected ? 74.0f : 66.0f;
+            UIAssets::drawCentered(lKey, nodes[i].pos, sz, sz);
         }
-
-        // 6. Bottom Corner Shuffle & Hint Buttons
-        UIAssets::drawCentered("astronomy_galaxy_word_wheel_ui_kit/01_hud_and_action_buttons/btn_shuffle_blue_arrows.png",
-                               { 72, 900 }, 78, 78);
-        UIAssets::drawCentered("astronomy_galaxy_word_wheel_ui_kit/01_hud_and_action_buttons/btn_hint_gold_lightbulb.png",
-                               { 468, 900 }, 78, 78);
 
         if (victoryModal.active) {
             victoryModal.draw(w, h);

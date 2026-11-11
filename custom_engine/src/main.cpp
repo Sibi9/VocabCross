@@ -77,8 +77,21 @@ int main(int argc, char* argv[]) {
         if (arg == "--self-test") selfTest = true;
     }
 
+    // Start with a safe 9:16 window size (450x800) that fits all laptop screens without OS clipping,
+    // then dynamically scale to 84% of the monitor height and center on screen!
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
-    InitWindow(kWidth, kHeight, "BAC Vocab Quest - VocabCross Engine");
+    InitWindow(450, 800, "BAC Vocab Quest - VocabCross Engine");
+    if (!verifyMode) {
+        int mon = GetCurrentMonitor();
+        int monW = GetMonitorWidth(mon);
+        int monH = GetMonitorHeight(mon);
+        if (monH > 400 && monW > 400) {
+            int targetH = std::min(900, (int)(monH * 0.84f));
+            int targetW = (int)std::round(targetH * (540.0f / 960.0f));
+            SetWindowSize(targetW, targetH);
+            SetWindowPosition((monW - targetW) / 2, std::max(24, (monH - targetH) / 2));
+        }
+    }
     SetTargetFPS(60);
 
     gAudio.init();
@@ -112,11 +125,9 @@ int main(int argc, char* argv[]) {
         std::cout << "[VERIFY-UI] Capturing all 14 UI screens and modals..." << std::endl;
         std::filesystem::create_directories("verification_screenshots");
 
-        // 0. Home Screen (BAC VOCAB QUEST + Animated Trio)
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_HOME, "verification_screenshots/00_home_bac_vocab_quest.png", canvas);
 
-        // 1..3. Original 3 Unit Maps
         mapScreen.setUnit(0);
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_MAP, "verification_screenshots/01_map_ethics.png", canvas);
@@ -129,13 +140,11 @@ int main(int argc, char* argv[]) {
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_MAP, "verification_screenshots/03_map_space.png", canvas);
 
-        // 4. Graduation Academy Map (Scrolls 1-14 -> Grand Blue Castle)
         mapScreen.setUnit(3);
         mapScreen.boyProgress = 5.0f;
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_MAP, "verification_screenshots/04_map_graduation_academy.png", canvas);
 
-        // 5..6. Crossword (Level 1 & Level 2)
         crosswordScreen.setLevel(LevelOf("BRIBERY"));
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_CROSSWORD, "verification_screenshots/04_crossword_lvl1.png", canvas);
@@ -144,7 +153,6 @@ int main(int argc, char* argv[]) {
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_CROSSWORD, "verification_screenshots/05_crossword_lvl2.png", canvas);
 
-        // 7..8. Image Guess (Level 1 & Level 2)
         imageGuessScreen.setLevel(LevelOf("ECLIPSE"));
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_IMAGE_GUESS, "verification_screenshots/06_image_guess_lvl1.png", canvas);
@@ -153,12 +161,10 @@ int main(int argc, char* argv[]) {
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_IMAGE_GUESS, "verification_screenshots/07_image_guess_lvl2.png", canvas);
 
-        // 9. Wheel Connect
         wheelScreen.setLevel(LevelOf("GALAXY"));
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_WHEEL, "verification_screenshots/08_wheel_lvl1.png", canvas);
 
-        // 10. Victory Modal (word_graduate_victory_ui_kit)
         if (!gGameData.levels.empty()) {
             crosswordScreen.victoryModal.show(gGameData.levels[LevelOf("BRIBERY")].word);
             crosswordScreen.victoryModal.anim = 1.0f;
@@ -166,7 +172,6 @@ int main(int argc, char* argv[]) {
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_CROSSWORD, "verification_screenshots/09_arabic_victory_modal.png", canvas);
 
-        // 11. Word Card Modal ("INTEGRITY" - image1_integrity_word_card_ui_kit)
         WordData integrityWord;
         integrityWord.word = "INTEGRITY";
         integrityWord.translation_ar = "النزاهة / الاستقامة والأمانة";
@@ -179,11 +184,9 @@ int main(int argc, char* argv[]) {
                 Nav::SCREEN_CROSSWORD, "verification_screenshots/10_word_card_integrity.png", canvas);
         crosswordScreen.victoryModal.hide();
 
-        // 12. Booster Shop (magical_alchemist_booster_shop_ui_kit)
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_SHOP, "verification_screenshots/11_booster_shop.png", canvas);
 
-        // 13. Daily Streak 1-7 (daily_streak_roadmap_ui_kit)
         Capture(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen,
                 Nav::SCREEN_STREAK, "verification_screenshots/12_daily_streak_1_to_7.png", canvas);
 

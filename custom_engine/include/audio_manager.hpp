@@ -28,7 +28,7 @@ public:
 
     void init() {
         if (initialized) return;
-        InitAudioDevice();
+        if (!IsAudioDeviceReady()) InitAudioDevice();
         initialized = true;
         int rate = 44100;
 
@@ -116,7 +116,7 @@ public:
         UnloadSound(snd_chime);
         UnloadSound(snd_click);
         UnloadSound(snd_whoosh);
-        CloseAudioDevice();
+        if (IsAudioDeviceReady()) CloseAudioDevice();
         initialized = false;
     }
 };

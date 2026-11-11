@@ -19,7 +19,9 @@ class ScreenImageGuess {
 public:
     VictoryModal victoryModal;
     std::string targetWord = "ECLIPSE";
-    std::string currentGuess;
+    std::vector<char> slotChars;
+    std::vector<int> slotKeySource; // index into keys[]
+    std::vector<bool> slotLocked;
     std::vector<char> keys;
     std::vector<bool> keyUsed;
     int currentLevelIdx = 0;
@@ -33,8 +35,12 @@ public:
         if (gGameData.levels.empty()) return;
         currentLevelIdx = std::clamp(index, 0, (int)gGameData.levels.size() - 1);
         targetWord = gGameData.levels[currentLevelIdx].word.word;
-        currentGuess.clear();
         victoryModal.hide();
+
+        int n = std::max(1, (int)targetWord.size());
+        slotChars.assign(n, '_');
+        slotKeySource.assign(n, -1);
+        slotLocked.assign(n, false);
 
         keys.clear();
         keyUsed.clear();
@@ -45,19 +51,71 @@ public:
         while (keys.size() < 14) {
             keys.push_back(extra[(keys.size() * 5 + currentLevelIdx * 3) % 26]);
         }
+        for (size_t i = 0; i < keys.size(); ++i) {
+            size_t j = (i * 5 + currentLevelIdx * 3 + 2) % keys.size();
+            std::swap(keys[i], keys[j]);
+        }
         keyUsed.assign(keys.size(), false);
     }
 
-    void revealHint() {
-        if (currentGuess.size() < targetWord.size()) {
-            char c = (char)std::toupper((unsigned char)targetWord[currentGuess.size()]);
-            currentGuess.push_back(c);
+    void checkCompletion() {
+        int n = (int)targetWord.size();
+        for (int i = 0; i < n; ++i) {
+            if (slotChars[i] == '_') return;
+        }
+        std::string built(slotChars.begin(), slotChars.end());
+        if (built == targetWord && !gGameData.levels.empty()) {
+            gGameData.completeLevel(currentLevelIdx, 3);
+            victoryModal.show(gGameData.levels[currentLevelIdx].word);
+        } else {
+            // Clear non-locked slots so player can retry
             gAudio.playPop();
-            if (currentGuess == targetWord && !gGameData.levels.empty()) {
-                gGameData.completeLevel(currentLevelIdx, 3);
-                victoryModal.show(gGameData.levels[currentLevelIdx].word);
+            for (int i = 0; i < n; ++i) {
+                if (!slotLocked[i]) {
+                    if (slotKeySource[i] >= 0 && slotKeySource[i] < (int)keyUsed.size()) {
+                        keyUsed[slotKeySource[i]] = false;
+                    }
+                    slotChars[i] = '_';
+                    slotKeySource[i] = -1;
+                }
             }
         }
+    }
+
+    void revealHint() {
+        int n = (int)targetWord.size();
+        for (int i = 0; i < n; ++i) {
+            char expected = (char)std::toupper((unsigned char)targetWord[i]);
+            if (!slotLocked[i] || slotChars[i] != expected) {
+                if (slotKeySource[i] >= 0 && slotKeySource[i] < (int)keyUsed.size()) {
+                    keyUsed[slotKeySource[i]] = false;
+                }
+                slotChars[i] = expected;
+                slotLocked[i] = true;
+                slotKeySource[i] = -1;
+                for (size_t k = 0; k < keys.size(); ++k) {
+                    if (!keyUsed[k] && keys[k] == expected) {
+                        keyUsed[k] = true;
+                        slotKeySource[i] = (int)k;
+                        break;
+                    }
+                }
+                gAudio.playPop();
+                checkCompletion();
+                return;
+            }
+        }
+    }
+
+    void shuffleUnusedKeys() {
+        for (size_t i = 0; i < keys.size(); ++i) {
+            if (keyUsed[i]) continue;
+            size_t j = (i * 3 + (int)(Theme::timeNow * 10.0f) + 1) % keys.size();
+            if (!keyUsed[j]) {
+                std::swap(keys[i], keys[j]);
+            }
+        }
+        gAudio.playClick();
     }
 
     int update(float dt) {
@@ -74,39 +132,76 @@ public:
             return -1;
         }
 
+        if (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE)) {
+            for (int i = (int)slotChars.size() - 1; i >= 0; --i) {
+                if (!slotLocked[i] && slotChars[i] != '_') {
+                    if (slotKeySource[i] >= 0 && slotKeySource[i] < (int)keyUsed.size()) {
+                        keyUsed[slotKeySource[i]] = false;
+                    }
+                    slotChars[i] = '_';
+                    slotKeySource[i] = -1;
+                    gAudio.playClick();
+                    break;
+                }
+            }
+        }
+
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             Vector2 m = Input::Mouse();
             // Pause / Back button
-            if (CheckCollisionPointRec(m, Rectangle{ 18, 22, 60, 60 })) {
+            if (CheckCollisionPointRec(m, Rectangle{ 12, 16, 68, 68 })) {
                 gAudio.playClick();
                 return Nav::SCREEN_MAP;
             }
             // Robot Helper / Speech Bubble Hint
-            if (CheckCollisionPointRec(m, Rectangle{ 310, 95, 215, 110 })) {
+            if (CheckCollisionPointRec(m, Rectangle{ 290, 75, 240, 145 })) {
                 revealHint();
                 return -1;
             }
-            // Skip button
-            if (CheckCollisionPointRec(m, Rectangle{ 372, 885, 145, 56 })) {
+            // Shuffle button (bottom-left)
+            if (CheckCollisionPointRec(m, Rectangle{ 16, 875, 118, 70 })) {
+                shuffleUnusedKeys();
+                return -1;
+            }
+            // Skip button (bottom-right)
+            if (CheckCollisionPointRec(m, Rectangle{ 368, 878, 155, 65 })) {
                 setLevel((currentLevelIdx + 1) % std::max(1, gGameData.levelCount()));
                 gAudio.playClick();
                 return -1;
             }
+            // Clicking any filled answer slot removes that letter (Undo!)
+            int n = std::max(3, (int)targetWord.size());
+            float slotSz = std::min(56.0f, 460.0f / (float)n);
+            float totalW = n * (slotSz + 6.0f) - 6.0f;
+            float startX = 270.0f - totalW * 0.5f;
+            for (int i = 0; i < (int)slotChars.size(); ++i) {
+                Rectangle sRec{ startX + i * (slotSz + 6.0f), 606.0f, slotSz, slotSz };
+                if (!slotLocked[i] && slotChars[i] != '_' && CheckCollisionPointRec(m, sRec)) {
+                    if (slotKeySource[i] >= 0 && slotKeySource[i] < (int)keyUsed.size()) {
+                        keyUsed[slotKeySource[i]] = false;
+                    }
+                    slotChars[i] = '_';
+                    slotKeySource[i] = -1;
+                    gAudio.playClick();
+                    return -1;
+                }
+            }
+
             // 2x7 Keyboard Tiles
             for (int i = 0; i < 14 && i < (int)keys.size(); ++i) {
                 int r = i / 7;
                 int c = i % 7;
-                Rectangle kRec{ 24.0f + c * 71.0f, 730.0f + r * 74.0f, 64.0f, 64.0f };
+                Rectangle kRec{ 24.0f + c * 71.0f, 718.0f + r * 74.0f, 64.0f, 64.0f };
                 if (!keyUsed[i] && CheckCollisionPointRec(m, kRec)) {
-                    keyUsed[i] = true;
-                    currentGuess.push_back(keys[i]);
-                    gAudio.playPop();
-                    if (currentGuess == targetWord && !gGameData.levels.empty()) {
-                        gGameData.completeLevel(currentLevelIdx, 3);
-                        victoryModal.show(gGameData.levels[currentLevelIdx].word);
-                    } else if (currentGuess.size() >= targetWord.size()) {
-                        currentGuess.clear();
-                        std::fill(keyUsed.begin(), keyUsed.end(), false);
+                    for (size_t s = 0; s < slotChars.size(); ++s) {
+                        if (slotChars[s] == '_') {
+                            keyUsed[i] = true;
+                            slotChars[s] = keys[i];
+                            slotKeySource[s] = i;
+                            gAudio.playPop();
+                            checkCompletion();
+                            break;
+                        }
                     }
                     break;
                 }
@@ -117,75 +212,51 @@ public:
 
     void draw(int w, int h) {
         float t = Theme::timeNow;
+        Vector2 m = Input::Mouse();
 
-        // 1. Academic Navy Background
-        DrawRectangleGradientV(0, 0, w, h, Color{ 17, 28, 53, 255 }, Color{ 11, 19, 36, 255 });
+        if (!UIAssets::drawStretch("image_guess/bg_image_guess_clean.png", Rectangle{ 0, 0, (float)w, (float)h })) {
+            DrawRectangleGradientV(0, 0, w, h, Color{ 17, 28, 53, 255 }, Color{ 11, 19, 36, 255 });
+        }
 
-        // 2. Top Pause Button, Pencil Progress Bar & Coin Pill
-        UI::GradientRound({ 18, 22, 58, 58 }, 18.0f, Color{ 59, 130, 246, 255 }, Color{ 29, 78, 216, 255 });
-        Theme::text3D("||", { 47, 51 }, 24, WHITE, BLACK, 2.0f, BLACK, true, true);
+        Theme::text3D("LEVEL " + std::to_string(currentLevelIdx + 1) + " / " + std::to_string(std::max(1, gGameData.levelCount())),
+                      { 270, 82 }, 15, Color{ 253, 224, 71, 255 }, BLACK, 2.0f, BLACK, true, true);
+        Theme::text3D(std::to_string(Theme::coins), { 488, 42 }, 19, WHITE, BLACK, 2.0f, BLACK, true, true);
 
-        // Pencil Progress Bar
-        UI::GradientRound({ 110, 28, 280, 38 }, 14.0f, Color{ 245, 158, 11, 255 }, Color{ 180, 83, 9, 255 });
-        UI::GradientRound({ 145, 34, 210, 26 }, 8.0f, Color{ 34, 197, 94, 255 }, Color{ 21, 128, 61, 255 });
-        Theme::text3D("LEVEL " + std::to_string(currentLevelIdx + 1) + "/" + std::to_string(std::max(1, gGameData.levelCount())),
-                      { 250, 80 }, 16, Color{ 253, 224, 71, 255 }, BLACK, 2.0f, BLACK, true, true);
-
-        UI::GradientRound({ 412, 26, 112, 42 }, 18.0f, Color{ 15, 23, 42, 255 }, Color{ 30, 41, 59, 255 });
-        Theme::text3D(std::to_string(Theme::coins), { 476, 47 }, 20, Color{ 253, 224, 71, 255 }, BLACK, 2.0f, BLACK, true, true);
-
-        // 3. Ornate Academic Picture Frame + Clue Image
-        Rectangle frameOuter{ 82, 182, 376, 396 };
-        UI::DropShadow(frameOuter, 26.0f, 8.0f, 0.45f, 4.0f);
-        UI::GradientRound(frameOuter, 26.0f, Color{ 251, 191, 36, 255 }, Color{ 180, 83, 9, 255 });
-        Rectangle frameInner{ 102, 204, 336, 352 };
-        UI::GradientRound(frameInner, 20.0f, Color{ 14, 165, 233, 255 }, Color{ 3, 105, 161, 255 });
-
-        std::string imgKey = "assets/images/eclipse.png";
+        std::string imgKey = "images/eclipse.png";
         if (!gGameData.levels.empty() && !gGameData.levels[currentLevelIdx].word.image_keyword.empty()) {
-            imgKey = "assets/images/" + gGameData.levels[currentLevelIdx].word.image_keyword + ".png";
+            std::string cand = "images/" + gGameData.levels[currentLevelIdx].word.image_keyword + ".png";
+            if (UIAssets::has(cand)) imgKey = cand;
         }
-        UIAssets::drawFit(imgKey, Rectangle{ 114, 218, 312, 324 });
+        UIAssets::drawStretch(imgKey, Rectangle{ 112, 226, 316, 308 });
 
-        // 4. Animated Graduation Robot (60-frame sequence from robot_animation_studio_fixed)
-        UI::GradientRound({ 305, 112, 118, 48 }, 16.0f, WHITE, Color{ 226, 232, 240, 255 });
-        Theme::text3D("NEED A HINT?", { 364, 136 }, 14, Color{ 15, 23, 42, 255 }, WHITE, 1.0f, BLANK, true, true);
+        Rectangle robotRec{ 396, 72, 136, 180 };
+        UIAssets::drawFrameSequence("image_guess/robot_rgba/frame_", 16, t, 12.0f, robotRec);
 
-        Rectangle robotRec{ 412, 88, 118, 128 };
-        if (!UIAssets::drawFrameSequence("frames_master/frame_", 60, t, 24.0f, robotRec)) {
-            UIAssets::drawFit("clean_layers/body_armless_whole_visor.png", robotRec);
-        }
-
-        // 5. Dashed Answer Slots
-        int n = (int)targetWord.size();
-        float slotSz = std::min(58.0f, 460.0f / std::max(1, n));
+        int n = std::max(3, (int)targetWord.size());
+        float slotSz = std::min(56.0f, 460.0f / (float)n);
         float totalW = n * (slotSz + 6.0f) - 6.0f;
         float startX = 270.0f - totalW * 0.5f;
-        for (int i = 0; i < n; ++i) {
-            Rectangle sRec{ startX + i * (slotSz + 6.0f), 618.0f, slotSz, slotSz };
+        for (int i = 0; i < (int)slotChars.size(); ++i) {
+            Rectangle sRec{ startX + i * (slotSz + 6.0f), 606.0f, slotSz, slotSz };
             UI::GradientRound(sRec, 14.0f, Color{ 11, 19, 36, 255 }, Color{ 23, 37, 84, 255 });
-            DrawRectangleRoundedLines(sRec, 0.25f, 6, 2.5f, WHITE);
-            if (i < (int)currentGuess.size()) {
-                std::string k = std::string("word_graduate_victory_ui_kit/letter_tiles_a_z/tile_") + currentGuess[i] + ".png";
+            UI::Rim(sRec, 14.0f, Color{ 148, 163, 184, 220 }, WHITE, Color{ 51, 65, 85, 220 });
+            if (slotChars[i] != '_') {
+                std::string k = std::string("image_guess/cream_tiles/tile_") + slotChars[i] + ".png";
                 UIAssets::drawFit(k, sRec);
             }
         }
 
-        // 6. 2x7 3D Cream Keyboard Tiles + Shuffle & Skip Buttons
         for (int i = 0; i < 14 && i < (int)keys.size(); ++i) {
             if (keyUsed[i]) continue;
             int r = i / 7;
             int c = i % 7;
-            Rectangle kRec{ 24.0f + c * 71.0f, 730.0f + r * 74.0f, 64.0f, 64.0f };
-            std::string tileKey = std::string("word_graduate_victory_ui_kit/letter_tiles_a_z/tile_") + keys[i] + ".png";
-            if (!UIAssets::drawFit(tileKey, kRec)) {
-                UI::GradientRound(kRec, 14.0f, Color{ 255, 253, 245, 255 }, Color{ 254, 240, 138, 255 });
-                Theme::text3D(std::string(1, keys[i]), { kRec.x + 32.0f, kRec.y + 32.0f }, 26, Color{ 15, 23, 42, 255 }, WHITE, 1.5f, BLANK, true, true);
+            Rectangle kRec{ 24.0f + c * 71.0f, 718.0f + r * 74.0f, 64.0f, 64.0f };
+            if (CheckCollisionPointRec(m, kRec)) {
+                kRec.y -= 3.0f;
             }
+            std::string tileKey = std::string("image_guess/cream_tiles/tile_") + keys[i] + ".png";
+            UIAssets::drawFit(tileKey, kRec);
         }
-
-        UI::GradientRound({ 372, 885, 145, 56 }, 20.0f, Color{ 251, 146, 60, 255 }, Color{ 239, 68, 68, 255 });
-        Theme::text3D("SKIP >>|", { 444, 913 }, 20, WHITE, BLACK, 2.5f, BLACK, true, true);
 
         if (victoryModal.active) {
             victoryModal.draw(w, h);
