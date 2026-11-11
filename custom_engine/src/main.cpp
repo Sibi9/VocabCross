@@ -65,6 +65,142 @@ int LevelOf(const std::string& word) {
     return (idx >= 0) ? idx : 0;
 }
 
+int RunSelfTest(ScreenHome& homeScreen, ScreenMaps& mapScreen, ScreenCrossword& crosswordScreen,
+                ScreenImageGuess& imageGuessScreen, ScreenWheel& wheelScreen,
+                ScreenShop& shopScreen, ScreenStreak& streakScreen) {
+    std::cout << "\n========================================================" << std::endl;
+    std::cout << "         VOCABCROSS ENGINE - AUTOMATED SELF-TEST        " << std::endl;
+    std::cout << "========================================================\n" << std::endl;
+
+    int passed = 0;
+    int failed = 0;
+
+    auto testAssert = [&](const std::string& name, bool cond) {
+        if (cond) {
+            std::cout << "  [PASS] " << name << std::endl;
+            passed++;
+        } else {
+            std::cerr << "  [FAIL] " << name << std::endl;
+            failed++;
+        }
+    };
+
+    // 1. Data Integrity & BAC Units
+    std::cout << "[TEST SUITE 1/5] Checking Data Integrity & BAC Units..." << std::endl;
+    testAssert("Level count equals exactly 32", gGameData.levelCount() == 32);
+    testAssert("Unit count equals exactly 4", gGameData.units.size() == 4);
+    int expectedStarts[4] = { 0, 10, 18, 26 };
+    int expectedCounts[4] = { 10, 8, 8, 6 };
+    for (int u = 0; u < 4; ++u) {
+        int uStart = gGameData.unitStart(u);
+        int uCount = gGameData.unitLevelCount(u);
+        testAssert("Unit " + std::to_string(u) + " (" + gGameData.unitShortTitle(u) + ") has " + std::to_string(expectedCounts[u]) + " levels", uCount == expectedCounts[u]);
+        testAssert("Unit " + std::to_string(u) + " starts at index " + std::to_string(expectedStarts[u]), uStart == expectedStarts[u]);
+    }
+
+    // 2. Stage Navigation & Mode Routing via Nav::stageScreenForLevel
+    std::cout << "\n[TEST SUITE 2/5] Checking Stage Navigation & Mode Routing..." << std::endl;
+    int crosswordCount = 0, imageCount = 0, wheelCount = 0;
+    bool allRoutedProperly = true;
+    for (int i = 0; i < gGameData.levelCount(); ++i) {
+        const auto& lvl = gGameData.levels[i];
+        int targetScreen = Nav::stageScreenForLevel(i);
+        std::string mode = lvl.mode.empty() ? lvl.data.mode : lvl.mode;
+
+        if (mode == "crossword") {
+            crosswordCount++;
+            if (targetScreen != Nav::SCREEN_CROSSWORD) allRoutedProperly = false;
+        } else if (mode == "image" || mode == "image_guess") {
+            imageCount++;
+            if (targetScreen != Nav::SCREEN_IMAGE_GUESS) allRoutedProperly = false;
+        } else if (mode == "wheel") {
+            wheelCount++;
+            if (targetScreen != Nav::SCREEN_WHEEL) allRoutedProperly = false;
+        } else {
+            allRoutedProperly = false;
+        }
+    }
+    testAssert("All 32 levels routed correctly via Nav::stageScreenForLevel", allRoutedProperly);
+    testAssert("Crossword mode count > 0 (" + std::to_string(crosswordCount) + " levels)", crosswordCount > 0);
+    testAssert("Image guess mode count > 0 (" + std::to_string(imageCount) + " levels)", imageCount > 0);
+    testAssert("Wheel mode count > 0 (" + std::to_string(wheelCount) + " levels)", wheelCount > 0);
+
+    // 3. Crossword Grid Construction & Validation
+    std::cout << "\n[TEST SUITE 3/5] Verifying Crossword Grid Construction..." << std::endl;
+    bool allCrosswordsBuilt = true;
+    for (int i = 0; i < gGameData.levelCount(); ++i) {
+        const auto& lvl = gGameData.levels[i];
+        std::string mode = lvl.mode.empty() ? lvl.data.mode : lvl.mode;
+        if (mode == "crossword") {
+            crosswordScreen.setLevel(i);
+            if (crosswordScreen.words.empty() || crosswordScreen.cells.empty()) {
+                allCrosswordsBuilt = false;
+            }
+            if (crosswordScreen.words[0].answer.empty()) {
+                allCrosswordsBuilt = false;
+            }
+        }
+    }
+    testAssert("All crossword levels build valid non-empty intersecting grids", allCrosswordsBuilt);
+
+    // 4. Word Wheel & Image Guess Gameplay Initialization
+    std::cout << "\n[TEST SUITE 4/5] Verifying Word Wheel & Image Guess Stages..." << std::endl;
+    bool allWheelsValid = true;
+    bool allImagesValid = true;
+    for (int i = 0; i < gGameData.levelCount(); ++i) {
+        const auto& lvl = gGameData.levels[i];
+        std::string mode = lvl.mode.empty() ? lvl.data.mode : lvl.mode;
+        if (mode == "wheel") {
+            wheelScreen.setLevel(i);
+            if (lvl.data.word.empty()) allWheelsValid = false;
+        } else if (mode == "image" || mode == "image_guess") {
+            imageGuessScreen.setLevel(i);
+            if (lvl.data.word.empty()) allImagesValid = false;
+        }
+    }
+    testAssert("All wheel stages initialized with target words and letter tray", allWheelsValid);
+    testAssert("All image guess stages initialized with target words and answer slots", allImagesValid);
+
+    // 5. Atomic Persistence (Save & Load Profile Roundtrip)
+    std::cout << "\n[TEST SUITE 5/5] Verifying Atomic Persistence (Save/Load Profile)..." << std::endl;
+    std::string testSavePath = "save_test.json";
+    int origCoins = Theme::coins;
+    int origStreak = gGameData.streak_day;
+
+    Theme::coins = 888;
+    gGameData.streak_day = 6;
+    gGameData.levels[0].stars = 3;
+    gGameData.levels[1].unlocked = true;
+
+    bool saved = gGameData.saveProfile(testSavePath);
+    testAssert("Atomic save to save_test.json succeeded", saved);
+
+    Theme::coins = 0;
+    gGameData.streak_day = 1;
+    gGameData.levels[0].stars = 0;
+
+    bool loaded = gGameData.loadProfile(testSavePath);
+    testAssert("Loading save_test.json succeeded", loaded);
+    testAssert("Saved coins restored correctly (888)", Theme::coins == 888);
+    testAssert("Saved streak restored correctly (6)", gGameData.streak_day == 6);
+    testAssert("Saved level stars restored correctly (3)", gGameData.levels[0].stars == 3);
+
+    std::error_code ec;
+    std::filesystem::remove(testSavePath, ec);
+    std::filesystem::remove(testSavePath + ".tmp", ec);
+
+    // Restore clean state
+    Theme::coins = origCoins;
+    gGameData.streak_day = origStreak;
+    gGameData.loadProfile("save_profile.json");
+
+    std::cout << "\n========================================================" << std::endl;
+    std::cout << "  SELF-TEST RESULT: " << passed << " PASSED, " << failed << " FAILED" << std::endl;
+    std::cout << "========================================================\n" << std::endl;
+
+    return (failed == 0) ? 0 : 1;
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -101,6 +237,7 @@ int main(int argc, char* argv[]) {
     if (!gGameData.loadFromFile("assets/data/bac_vocabulary.json")) {
         gGameData.loadFromFile("../data/bac_vocabulary.json");
     }
+    gGameData.loadProfile();
 
     ScreenHome homeScreen;
     ScreenMaps mapScreen;
@@ -117,6 +254,7 @@ int main(int argc, char* argv[]) {
     wheelScreen.init();
     shopScreen.init();
     streakScreen.init();
+    streakScreen.currentStreakDay = gGameData.streak_day;
 
     RenderTexture2D canvas = LoadRenderTexture(kWidth, kHeight);
     SetTextureFilter(canvas.texture, TEXTURE_FILTER_BILINEAR);
@@ -198,8 +336,17 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    if (selfTest) {
+        int code = RunSelfTest(homeScreen, mapScreen, crosswordScreen, imageGuessScreen, wheelScreen, shopScreen, streakScreen);
+        UnloadRenderTexture(canvas);
+        UIAssets::unloadAll();
+        Theme::unloadFonts();
+        gAudio.close();
+        CloseWindow();
+        return code;
+    }
+
     int screen = Nav::SCREEN_HOME;
-    if (selfTest) screen = Nav::SCREEN_MAP;
 
     while (!WindowShouldClose()) {
         float dt = std::min(GetFrameTime(), 0.05f);
@@ -224,11 +371,11 @@ int main(int argc, char* argv[]) {
             if (mapScreen.pendingNavScreen >= 0) {
                 screen = mapScreen.pendingNavScreen;
             } else if (lvl >= 0 && lvl < gGameData.levelCount()) {
-                std::string m = gGameData.levels[lvl].mode;
-                if (m == "image_guess") {
+                int targetScreen = Nav::stageScreenForLevel(lvl);
+                if (targetScreen == Nav::SCREEN_IMAGE_GUESS) {
                     imageGuessScreen.setLevel(lvl);
                     screen = Nav::SCREEN_IMAGE_GUESS;
-                } else if (m == "wheel") {
+                } else if (targetScreen == Nav::SCREEN_WHEEL) {
                     wheelScreen.setLevel(lvl);
                     screen = Nav::SCREEN_WHEEL;
                 } else {

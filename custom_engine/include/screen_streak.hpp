@@ -35,7 +35,9 @@ public:
                 if (!rewardClaimedToday) {
                     rewardClaimedToday = true;
                     currentStreakDay = std::min(7, currentStreakDay + 1);
+                    gGameData.streak_day = currentStreakDay;
                     Theme::coins += 120;
+                    gGameData.saveProfile();
                     gAudio.playFanfare();
                     Theme::spawnCelebration({ 270, 900 }, 72);
                 } else {

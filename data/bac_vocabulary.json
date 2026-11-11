@@ -1,647 +1,659 @@
-﻿{
-    "units":  [
-                  {
-                      "title_ar":  "الأخلاق في المعاملات التجارية",
-                      "words":  [
-                                    {
-                                        "word":  "CORRUPT",
-                                        "definition_en":  "Dishonest or illegal behavior especially by people in authority",
-                                        "translation_ar":  "فاسد / يفسد",
-                                        "letters":  [
-                                                        "C",
-                                                        "O",
-                                                        "R",
-                                                        "U",
-                                                        "P",
-                                                        "T"
-                                                    ],
-                                        "image_keyword":  "bribery_money",
-                                        "difficulty":  2,
-                                        "mode":  "wheel",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Immoral, dishonest"
-                                    },
-                                    {
-                                        "word":  "BRIBE",
-                                        "definition_en":  "Money or favor offered to influence a public official illegally",
-                                        "translation_ar":  "رشوة / يرشو",
-                                        "letters":  [
-                                                        "B",
-                                                        "R",
-                                                        "I",
-                                                        "B",
-                                                        "E"
-                                                    ],
-                                        "image_keyword":  "cash_bribe",
-                                        "difficulty":  1,
-                                        "mode":  "crossword",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Payoff"
-                                    },
-                                    {
-                                        "word":  "FRAUD",
-                                        "definition_en":  "Wrongful or criminal deception intended to result in financial gain",
-                                        "translation_ar":  "احتيال / تزوير",
-                                        "letters":  [
-                                                        "F",
-                                                        "R",
-                                                        "A",
-                                                        "U",
-                                                        "D"
-                                                    ],
-                                        "image_keyword":  "fraud_stamp",
-                                        "difficulty":  2,
-                                        "mode":  "wheel",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Deceit, cheating"
-                                    },
-                                    {
-                                        "word":  "FAKE",
-                                        "definition_en":  "Not genuine or authentic; an imitation",
-                                        "translation_ar":  "مزيّف / مقلّد",
-                                        "letters":  [
-                                                        "F",
-                                                        "A",
-                                                        "K",
-                                                        "E"
-                                                    ],
-                                        "image_keyword":  "fake_product",
-                                        "difficulty":  1,
-                                        "mode":  "image",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Counterfeit, forged"
-                                    },
-                                    {
-                                        "word":  "LAUNDER",
-                                        "definition_en":  "To transfer illegally obtained money through banks to make it look legal",
-                                        "translation_ar":  "يغسل أموالاً",
-                                        "letters":  [
-                                                        "L",
-                                                        "A",
-                                                        "U",
-                                                        "N",
-                                                        "D",
-                                                        "E",
-                                                        "R"
-                                                    ],
-                                        "image_keyword":  "money_laundering",
-                                        "difficulty":  3,
-                                        "mode":  "wheel",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Cleanse funds"
-                                    },
-                                    {
-                                        "word":  "SMUGGLE",
-                                        "definition_en":  "To move goods illegally into or out of a country",
-                                        "translation_ar":  "يهرّب سلعاً أو أموالاً",
-                                        "letters":  [
-                                                        "S",
-                                                        "M",
-                                                        "U",
-                                                        "G",
-                                                        "G",
-                                                        "L",
-                                                        "E"
-                                                    ],
-                                        "image_keyword":  "customs_smuggling",
-                                        "difficulty":  3,
-                                        "mode":  "crossword",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Traffic illegally"
-                                    },
-                                    {
-                                        "word":  "EMBEZZLE",
-                                        "definition_en":  "To steal money that you are responsible for managing in a company",
-                                        "translation_ar":  "يختلس أموالاً",
-                                        "letters":  [
-                                                        "E",
-                                                        "M",
-                                                        "B",
-                                                        "E",
-                                                        "Z",
-                                                        "L"
-                                                    ],
-                                        "image_keyword":  "stolen_cash",
-                                        "difficulty":  4,
-                                        "mode":  "wheel",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Misappropriate"
-                                    },
-                                    {
-                                        "word":  "NEPOTISM",
-                                        "definition_en":  "Giving unfair advantages or jobs to your own family members",
-                                        "translation_ar":  "محاباة الأقارب / المعريفة",
-                                        "letters":  [
-                                                        "N",
-                                                        "E",
-                                                        "P",
-                                                        "O",
-                                                        "T",
-                                                        "I",
-                                                        "S",
-                                                        "M"
-                                                    ],
-                                        "image_keyword":  "favoritism_handshake",
-                                        "difficulty":  4,
-                                        "mode":  "crossword",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Favoritism"
-                                    },
-                                    {
-                                        "word":  "COUNTERFEIT",
-                                        "definition_en":  "Made in exact imitation of something valuable with intention to deceive",
-                                        "translation_ar":  "سلعة مزيفة / تقليد",
-                                        "letters":  [
-                                                        "C",
-                                                        "O",
-                                                        "U",
-                                                        "N",
-                                                        "T",
-                                                        "E",
-                                                        "R",
-                                                        "F",
-                                                        "E",
-                                                        "I",
-                                                        "T"
-                                                    ],
-                                        "image_keyword":  "counterfeit_shoes",
-                                        "difficulty":  5,
-                                        "mode":  "image",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Forged, imitation"
-                                    },
-                                    {
-                                        "word":  "WHISTLEBLOWER",
-                                        "definition_en":  "A person who exposes secretive dishonest activities within an organization",
-                                        "translation_ar":  "كاشف الفساد / مبلّغ",
-                                        "letters":  [
-                                                        "W",
-                                                        "H",
-                                                        "I",
-                                                        "S",
-                                                        "T",
-                                                        "L",
-                                                        "E",
-                                                        "B",
-                                                        "L",
-                                                        "O",
-                                                        "W"
-                                                    ],
-                                        "image_keyword":  "whistleblower_megaphone",
-                                        "difficulty":  5,
-                                        "mode":  "crossword",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Informant, reporter"
-                                    }
-                                ],
-                      "id":  "unit_1_ethics",
-                      "title_en":  "Ethics in Business",
-                      "island_name":  "جزيرة النزاهة (Integrity Island)"
-                  },
-                  {
-                      "title_ar":  "الأمن الغذائي وسلامة المستهلك",
-                      "words":  [
-                                    {
-                                        "word":  "SAFETY",
-                                        "definition_en":  "The condition of being protected from harm or danger",
-                                        "translation_ar":  "أمان / سلامة",
-                                        "letters":  [
-                                                        "S",
-                                                        "A",
-                                                        "F",
-                                                        "E",
-                                                        "T",
-                                                        "Y"
-                                                    ],
-                                        "image_keyword":  "food_safety_shield",
-                                        "difficulty":  2,
-                                        "mode":  "wheel",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Protection, security"
-                                    },
-                                    {
-                                        "word":  "CONSUME",
-                                        "definition_en":  "To eat, drink, or use up resources and products",
-                                        "translation_ar":  "يستهلك",
-                                        "letters":  [
-                                                        "C",
-                                                        "O",
-                                                        "N",
-                                                        "S",
-                                                        "U",
-                                                        "M",
-                                                        "E"
-                                                    ],
-                                        "image_keyword":  "consumer_shopping",
-                                        "difficulty":  2,
-                                        "mode":  "crossword",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Use up, ingest"
-                                    },
-                                    {
-                                        "word":  "ORGANIC",
-                                        "definition_en":  "Produced without chemical fertilizers or synthetic pesticides",
-                                        "translation_ar":  "عضوي / طبيعي",
-                                        "letters":  [
-                                                        "O",
-                                                        "R",
-                                                        "G",
-                                                        "A",
-                                                        "N",
-                                                        "I",
-                                                        "C"
-                                                    ],
-                                        "image_keyword":  "organic_apple_farm",
-                                        "difficulty":  2,
-                                        "mode":  "image",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Natural, biological"
-                                    },
-                                    {
-                                        "word":  "JUNK",
-                                        "definition_en":  "Food that is quick to prepare but contains high fat, sugar and low nutrients",
-                                        "translation_ar":  "طعام غير صحي",
-                                        "letters":  [
-                                                        "J",
-                                                        "U",
-                                                        "N",
-                                                        "K"
-                                                    ],
-                                        "image_keyword":  "burger_fries",
-                                        "difficulty":  1,
-                                        "mode":  "wheel",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Fast food, unhealthy"
-                                    },
-                                    {
-                                        "word":  "TOXIC",
-                                        "definition_en":  "Poisonous or capable of causing serious health damage",
-                                        "translation_ar":  "سام / ضار",
-                                        "letters":  [
-                                                        "T",
-                                                        "O",
-                                                        "X",
-                                                        "I",
-                                                        "C"
-                                                    ],
-                                        "image_keyword":  "warning_toxic_hazard",
-                                        "difficulty":  1,
-                                        "mode":  "crossword",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Poisonous, hazardous"
-                                    },
-                                    {
-                                        "word":  "OBESITY",
-                                        "definition_en":  "The state of being excessively overweight to a point harmful to health",
-                                        "translation_ar":  "سمنة مفرطة",
-                                        "letters":  [
-                                                        "O",
-                                                        "B",
-                                                        "E",
-                                                        "S",
-                                                        "I",
-                                                        "T",
-                                                        "Y"
-                                                    ],
-                                        "image_keyword":  "measuring_tape_waist",
-                                        "difficulty":  3,
-                                        "mode":  "image",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Corpulence, stoutness"
-                                    },
-                                    {
-                                        "word":  "PESTICIDE",
-                                        "definition_en":  "A chemical substance used to kill pests and insects on crops",
-                                        "translation_ar":  "مبيد حشري",
-                                        "letters":  [
-                                                        "P",
-                                                        "E",
-                                                        "S",
-                                                        "T",
-                                                        "I",
-                                                        "C",
-                                                        "I",
-                                                        "D",
-                                                        "E"
-                                                    ],
-                                        "image_keyword":  "spraying_crops",
-                                        "difficulty":  4,
-                                        "mode":  "crossword",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Insecticide"
-                                    },
-                                    {
-                                        "word":  "PRESERVATIVE",
-                                        "definition_en":  "A substance added to products like food to prevent decomposition",
-                                        "translation_ar":  "مادة حافظة",
-                                        "letters":  [
-                                                        "P",
-                                                        "R",
-                                                        "E",
-                                                        "S",
-                                                        "E",
-                                                        "R",
-                                                        "V",
-                                                        "A",
-                                                        "T",
-                                                        "I",
-                                                        "V"
-                                                    ],
-                                        "image_keyword":  "canned_food_ingredients",
-                                        "difficulty":  5,
-                                        "mode":  "wheel",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Additive, protectant"
-                                    }
-                                ],
-                      "id":  "unit_2_safety",
-                      "title_en":  "Safety First",
-                      "island_name":  "جزيرة الصحة والغذاء (Nutrition Island)"
-                  },
-                  {
-                      "title_ar":  "علم الفلك والنظام الشمسي",
-                      "words":  [
-                                    {
-                                        "word":  "PLANET",
-                                        "definition_en":  "A large celestial body moving in an elliptical orbit around a star",
-                                        "translation_ar":  "كوكب",
-                                        "letters":  [
-                                                        "P",
-                                                        "L",
-                                                        "A",
-                                                        "N",
-                                                        "E",
-                                                        "T"
-                                                    ],
-                                        "image_keyword":  "saturn_rings_planet",
-                                        "difficulty":  2,
-                                        "mode":  "wheel",
-                                        "frequency":  "high",
-                                        "synonym_en":  "World, orb"
-                                    },
-                                    {
-                                        "word":  "ORBIT",
-                                        "definition_en":  "The curved curved path of a celestial object around a star or planet",
-                                        "translation_ar":  "مدار فلكي",
-                                        "letters":  [
-                                                        "O",
-                                                        "R",
-                                                        "B",
-                                                        "I",
-                                                        "T"
-                                                    ],
-                                        "image_keyword":  "orbit_satellite_earth",
-                                        "difficulty":  1,
-                                        "mode":  "crossword",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Revolution, trajectory"
-                                    },
-                                    {
-                                        "word":  "GRAVITY",
-                                        "definition_en":  "The natural universal force that attracts objects toward each other",
-                                        "translation_ar":  "الجاذبية",
-                                        "letters":  [
-                                                        "G",
-                                                        "R",
-                                                        "A",
-                                                        "V",
-                                                        "I",
-                                                        "T",
-                                                        "Y"
-                                                    ],
-                                        "image_keyword":  "falling_apple_space",
-                                        "difficulty":  2,
-                                        "mode":  "wheel",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Gravitation"
-                                    },
-                                    {
-                                        "word":  "GALAXY",
-                                        "definition_en":  "A massive gravitationally bound system of stars, gas, and dark matter",
-                                        "translation_ar":  "مجرّة",
-                                        "letters":  [
-                                                        "G",
-                                                        "A",
-                                                        "L",
-                                                        "A",
-                                                        "X",
-                                                        "Y"
-                                                    ],
-                                        "image_keyword":  "spiral_galaxy_stars",
-                                        "difficulty":  2,
-                                        "mode":  "image",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Milky Way, star system"
-                                    },
-                                    {
-                                        "word":  "TELESCOPE",
-                                        "definition_en":  "An optical instrument designed to make distant celestial objects appear nearer",
-                                        "translation_ar":  "تلسكوب / مرقاب",
-                                        "letters":  [
-                                                        "T",
-                                                        "E",
-                                                        "L",
-                                                        "E",
-                                                        "S",
-                                                        "C",
-                                                        "O",
-                                                        "P"
-                                                    ],
-                                        "image_keyword":  "james_webb_telescope",
-                                        "difficulty":  3,
-                                        "mode":  "image",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Observatory scope"
-                                    },
-                                    {
-                                        "word":  "CELESTIAL",
-                                        "definition_en":  "Positioned in or relating to the sky or outer space",
-                                        "translation_ar":  "سماوي / فلكي",
-                                        "letters":  [
-                                                        "C",
-                                                        "E",
-                                                        "L",
-                                                        "E",
-                                                        "S",
-                                                        "T",
-                                                        "I",
-                                                        "A"
-                                                    ],
-                                        "image_keyword":  "constellation_sky",
-                                        "difficulty":  4,
-                                        "mode":  "crossword",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Heavenly, stellar, cosmic"
-                                    },
-                                    {
-                                        "word":  "ASTEROID",
-                                        "definition_en":  "A small rocky body orbiting the sun, especially between Mars and Jupiter",
-                                        "translation_ar":  "كويكب صخري",
-                                        "letters":  [
-                                                        "A",
-                                                        "S",
-                                                        "T",
-                                                        "E",
-                                                        "R",
-                                                        "O",
-                                                        "I",
-                                                        "D"
-                                                    ],
-                                        "image_keyword":  "asteroid_belt",
-                                        "difficulty":  4,
-                                        "mode":  "wheel",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Minor planet, space rock"
-                                    },
-                                    {
-                                        "word":  "INTERSTELLAR",
-                                        "definition_en":  "Occurring, situated, or travelling between the stars",
-                                        "translation_ar":  "بين النجوم",
-                                        "letters":  [
-                                                        "I",
-                                                        "N",
-                                                        "T",
-                                                        "E",
-                                                        "R",
-                                                        "S",
-                                                        "T",
-                                                        "E",
-                                                        "L",
-                                                        "A"
-                                                    ],
-                                        "image_keyword":  "nebula_deep_space",
-                                        "difficulty":  5,
-                                        "mode":  "crossword",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Deep space"
-                                    }
-                                ],
-                      "id":  "unit_3_astronomy",
-                      "title_en":  "Astronomy and the Solar System",
-                      "island_name":  "جزيرة الفضاء والمجرات (Cosmic Island)"
-                  },
-                  {
-                      "title_ar":  "المشاعر والانفعالات والفكاهة",
-                      "words":  [
-                                    {
-                                        "word":  "STRESS",
-                                        "definition_en":  "A state of mental or emotional strain resulting from demanding circumstances",
-                                        "translation_ar":  "توتر / ضغط نفسي",
-                                        "letters":  [
-                                                        "S",
-                                                        "T",
-                                                        "R",
-                                                        "E",
-                                                        "S"
-                                                    ],
-                                        "image_keyword":  "stress_headache",
-                                        "difficulty":  2,
-                                        "mode":  "wheel",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Tension, anxiety, pressure"
-                                    },
-                                    {
-                                        "word":  "EMOTION",
-                                        "definition_en":  "A strong feeling deriving from one\u0027s circumstances, mood, or relationships",
-                                        "translation_ar":  "عاطفة / انفعال",
-                                        "letters":  [
-                                                        "E",
-                                                        "M",
-                                                        "O",
-                                                        "T",
-                                                        "I",
-                                                        "O",
-                                                        "N"
-                                                    ],
-                                        "image_keyword":  "emotional_faces",
-                                        "difficulty":  2,
-                                        "mode":  "crossword",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Feeling, sentiment"
-                                    },
-                                    {
-                                        "word":  "LAUGHTER",
-                                        "definition_en":  "The action or sound of laughing, known as good therapeutic medicine",
-                                        "translation_ar":  "ضحك",
-                                        "letters":  [
-                                                        "L",
-                                                        "A",
-                                                        "U",
-                                                        "G",
-                                                        "H",
-                                                        "T",
-                                                        "E",
-                                                        "R"
-                                                    ],
-                                        "image_keyword":  "laughing_happy_people",
-                                        "difficulty":  3,
-                                        "mode":  "image",
-                                        "frequency":  "high",
-                                        "synonym_en":  "Chuckle, giggling"
-                                    },
-                                    {
-                                        "word":  "EMPATHY",
-                                        "definition_en":  "The ability to understand and share the feelings of another person",
-                                        "translation_ar":  "تعاطف وجداني",
-                                        "letters":  [
-                                                        "E",
-                                                        "M",
-                                                        "P",
-                                                        "A",
-                                                        "T",
-                                                        "H",
-                                                        "Y"
-                                                    ],
-                                        "image_keyword":  "helping_hands_care",
-                                        "difficulty":  4,
-                                        "mode":  "wheel",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Compassion, sensitivity"
-                                    },
-                                    {
-                                        "word":  "ANXIETY",
-                                        "definition_en":  "A feeling of worry, nervousness, or unease about an imminent event",
-                                        "translation_ar":  "قلق مفرط",
-                                        "letters":  [
-                                                        "A",
-                                                        "N",
-                                                        "X",
-                                                        "I",
-                                                        "E",
-                                                        "T",
-                                                        "Y"
-                                                    ],
-                                        "image_keyword":  "anxious_person",
-                                        "difficulty":  4,
-                                        "mode":  "crossword",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Apprehension, nervousness"
-                                    },
-                                    {
-                                        "word":  "RESILIENCE",
-                                        "definition_en":  "The capacity to withstand or to recover quickly from difficult conditions",
-                                        "translation_ar":  "مرونة نفسية / قدرة على التعافي",
-                                        "letters":  [
-                                                        "R",
-                                                        "E",
-                                                        "S",
-                                                        "I",
-                                                        "L",
-                                                        "I",
-                                                        "E",
-                                                        "N",
-                                                        "C"
-                                                    ],
-                                        "image_keyword":  "plant_growing_concrete",
-                                        "difficulty":  5,
-                                        "mode":  "crossword",
-                                        "frequency":  "advanced",
-                                        "synonym_en":  "Toughness, endurance"
-                                    }
-                                ],
-                      "id":  "unit_4_feelings",
-                      "title_en":  "Feelings and Humor",
-                      "island_name":  "جزيرة المشاعر (Emotions Island)"
-                  }
-              ]
+{
+    "units": [
+        {
+            "title_ar": "الأخلاق في المعاملات التجارية",
+            "words": [
+                {
+                    "word": "CORRUPT",
+                    "definition_en": "Dishonest or illegal behavior especially by people in authority",
+                    "translation_ar": "فاسد / يفسد",
+                    "letters": [
+                        "C",
+                        "O",
+                        "R",
+                        "R",
+                        "U",
+                        "P",
+                        "T"
+                    ],
+                    "image_keyword": "bribery_money",
+                    "difficulty": 2,
+                    "mode": "wheel",
+                    "frequency": "high",
+                    "synonym_en": "Immoral, dishonest"
+                },
+                {
+                    "word": "BRIBERY",
+                    "definition_en": "The practice of offering money for illegal favor",
+                    "translation_ar": "رشوة / ارتشاء",
+                    "letters": [
+                        "B",
+                        "R",
+                        "I",
+                        "B",
+                        "E",
+                        "R",
+                        "Y"
+                    ],
+                    "image_keyword": "bribery_money",
+                    "difficulty": 2,
+                    "mode": "crossword",
+                    "frequency": "high",
+                    "synonym_en": "Payoff, graft"
+                },
+                {
+                    "word": "FRAUD",
+                    "definition_en": "Wrongful or criminal deception intended to result in financial gain",
+                    "translation_ar": "احتيال / تزوير",
+                    "letters": [
+                        "F",
+                        "R",
+                        "A",
+                        "U",
+                        "D"
+                    ],
+                    "image_keyword": "fraud_stamp",
+                    "difficulty": 2,
+                    "mode": "wheel",
+                    "frequency": "high",
+                    "synonym_en": "Deceit, cheating"
+                },
+                {
+                    "word": "FAKE",
+                    "definition_en": "Not genuine or authentic; an imitation",
+                    "translation_ar": "مزيّف / مقلّد",
+                    "letters": [
+                        "F",
+                        "A",
+                        "K",
+                        "E"
+                    ],
+                    "image_keyword": "fake_product",
+                    "difficulty": 1,
+                    "mode": "image",
+                    "frequency": "high",
+                    "synonym_en": "Counterfeit, forged"
+                },
+                {
+                    "word": "LAUNDER",
+                    "definition_en": "To transfer illegally obtained money through banks to make it look legal",
+                    "translation_ar": "يغسل أموالاً",
+                    "letters": [
+                        "L",
+                        "A",
+                        "U",
+                        "N",
+                        "D",
+                        "E",
+                        "R"
+                    ],
+                    "image_keyword": "money_laundering",
+                    "difficulty": 3,
+                    "mode": "wheel",
+                    "frequency": "high",
+                    "synonym_en": "Cleanse funds"
+                },
+                {
+                    "word": "SMUGGLE",
+                    "definition_en": "To move goods illegally into or out of a country",
+                    "translation_ar": "يهرّب سلعاً أو أموالاً",
+                    "letters": [
+                        "S",
+                        "M",
+                        "U",
+                        "G",
+                        "G",
+                        "L",
+                        "E"
+                    ],
+                    "image_keyword": "customs_smuggling",
+                    "difficulty": 3,
+                    "mode": "crossword",
+                    "frequency": "high",
+                    "synonym_en": "Traffic illegally"
+                },
+                {
+                    "word": "EMBEZZLE",
+                    "definition_en": "To steal money that you are responsible for managing in a company",
+                    "translation_ar": "يختلس أموالاً",
+                    "letters": [
+                        "E",
+                        "M",
+                        "B",
+                        "E",
+                        "Z",
+                        "Z",
+                        "L",
+                        "E"
+                    ],
+                    "image_keyword": "stolen_cash",
+                    "difficulty": 4,
+                    "mode": "wheel",
+                    "frequency": "advanced",
+                    "synonym_en": "Misappropriate"
+                },
+                {
+                    "word": "NEPOTISM",
+                    "definition_en": "Giving unfair advantages or jobs to your own family members",
+                    "translation_ar": "محاباة الأقارب / المعريفة",
+                    "letters": [
+                        "N",
+                        "E",
+                        "P",
+                        "O",
+                        "T",
+                        "I",
+                        "S",
+                        "M"
+                    ],
+                    "image_keyword": "favoritism_handshake",
+                    "difficulty": 4,
+                    "mode": "crossword",
+                    "frequency": "advanced",
+                    "synonym_en": "Favoritism"
+                },
+                {
+                    "word": "COUNTERFEIT",
+                    "definition_en": "Made in exact imitation of something valuable with intention to deceive",
+                    "translation_ar": "سلعة مزيفة / تقليد",
+                    "letters": [
+                        "C",
+                        "O",
+                        "U",
+                        "N",
+                        "T",
+                        "E",
+                        "R",
+                        "F",
+                        "E",
+                        "I",
+                        "T"
+                    ],
+                    "image_keyword": "counterfeit_shoes",
+                    "difficulty": 5,
+                    "mode": "image",
+                    "frequency": "advanced",
+                    "synonym_en": "Forged, imitation"
+                },
+                {
+                    "word": "WHISTLEBLOWER",
+                    "definition_en": "A person who exposes secretive dishonest activities within an organization",
+                    "translation_ar": "كاشف الفساد / مبلّغ",
+                    "letters": [
+                        "W",
+                        "H",
+                        "I",
+                        "S",
+                        "T",
+                        "L",
+                        "E",
+                        "B",
+                        "L",
+                        "O",
+                        "W",
+                        "E",
+                        "R"
+                    ],
+                    "image_keyword": "whistleblower_megaphone",
+                    "difficulty": 5,
+                    "mode": "crossword",
+                    "frequency": "advanced",
+                    "synonym_en": "Informant, reporter"
+                }
+            ],
+            "id": "unit_1_ethics",
+            "title_en": "Ethics in Business",
+            "island_name": "جزيرة النزاهة (Integrity Island)"
+        },
+        {
+            "title_ar": "الأمن الغذائي وسلامة المستهلك",
+            "words": [
+                {
+                    "word": "SAFETY",
+                    "definition_en": "The condition of being protected from harm or danger",
+                    "translation_ar": "أمان / سلامة",
+                    "letters": [
+                        "S",
+                        "A",
+                        "F",
+                        "E",
+                        "T",
+                        "Y"
+                    ],
+                    "image_keyword": "food_safety_shield",
+                    "difficulty": 2,
+                    "mode": "wheel",
+                    "frequency": "high",
+                    "synonym_en": "Protection, security"
+                },
+                {
+                    "word": "CONSUME",
+                    "definition_en": "To eat, drink, or use up resources and products",
+                    "translation_ar": "يستهلك",
+                    "letters": [
+                        "C",
+                        "O",
+                        "N",
+                        "S",
+                        "U",
+                        "M",
+                        "E"
+                    ],
+                    "image_keyword": "consumer_shopping",
+                    "difficulty": 2,
+                    "mode": "crossword",
+                    "frequency": "high",
+                    "synonym_en": "Use up, ingest"
+                },
+                {
+                    "word": "ORGANIC",
+                    "definition_en": "Produced without chemical fertilizers or synthetic pesticides",
+                    "translation_ar": "عضوي / طبيعي",
+                    "letters": [
+                        "O",
+                        "R",
+                        "G",
+                        "A",
+                        "N",
+                        "I",
+                        "C"
+                    ],
+                    "image_keyword": "organic_apple_farm",
+                    "difficulty": 2,
+                    "mode": "image",
+                    "frequency": "high",
+                    "synonym_en": "Natural, biological"
+                },
+                {
+                    "word": "JUNK",
+                    "definition_en": "Food that is quick to prepare but contains high fat, sugar and low nutrients",
+                    "translation_ar": "طعام غير صحي",
+                    "letters": [
+                        "J",
+                        "U",
+                        "N",
+                        "K"
+                    ],
+                    "image_keyword": "burger_fries",
+                    "difficulty": 1,
+                    "mode": "wheel",
+                    "frequency": "high",
+                    "synonym_en": "Fast food, unhealthy"
+                },
+                {
+                    "word": "TOXIC",
+                    "definition_en": "Poisonous or capable of causing serious health damage",
+                    "translation_ar": "سام / ضار",
+                    "letters": [
+                        "T",
+                        "O",
+                        "X",
+                        "I",
+                        "C"
+                    ],
+                    "image_keyword": "warning_toxic_hazard",
+                    "difficulty": 1,
+                    "mode": "crossword",
+                    "frequency": "high",
+                    "synonym_en": "Poisonous, hazardous"
+                },
+                {
+                    "word": "OBESITY",
+                    "definition_en": "The state of being excessively overweight to a point harmful to health",
+                    "translation_ar": "سمنة مفرطة",
+                    "letters": [
+                        "O",
+                        "B",
+                        "E",
+                        "S",
+                        "I",
+                        "T",
+                        "Y"
+                    ],
+                    "image_keyword": "measuring_tape_waist",
+                    "difficulty": 3,
+                    "mode": "image",
+                    "frequency": "advanced",
+                    "synonym_en": "Corpulence, stoutness"
+                },
+                {
+                    "word": "PESTICIDE",
+                    "definition_en": "A chemical substance used to kill pests and insects on crops",
+                    "translation_ar": "مبيد حشري",
+                    "letters": [
+                        "P",
+                        "E",
+                        "S",
+                        "T",
+                        "I",
+                        "C",
+                        "I",
+                        "D",
+                        "E"
+                    ],
+                    "image_keyword": "spraying_crops",
+                    "difficulty": 4,
+                    "mode": "crossword",
+                    "frequency": "advanced",
+                    "synonym_en": "Insecticide"
+                },
+                {
+                    "word": "PRESERVATIVE",
+                    "definition_en": "A substance added to products like food to prevent decomposition",
+                    "translation_ar": "مادة حافظة",
+                    "letters": [
+                        "P",
+                        "R",
+                        "E",
+                        "S",
+                        "E",
+                        "R",
+                        "V",
+                        "A",
+                        "T",
+                        "I",
+                        "V",
+                        "E"
+                    ],
+                    "image_keyword": "canned_food_ingredients",
+                    "difficulty": 5,
+                    "mode": "wheel",
+                    "frequency": "advanced",
+                    "synonym_en": "Additive, protectant"
+                }
+            ],
+            "id": "unit_2_safety",
+            "title_en": "Safety First",
+            "island_name": "جزيرة الصحة والغذاء (Nutrition Island)"
+        },
+        {
+            "title_ar": "علم الفلك والنظام الشمسي",
+            "words": [
+                {
+                    "word": "PLANET",
+                    "definition_en": "A large celestial body moving in an elliptical orbit around a star",
+                    "translation_ar": "كوكب",
+                    "letters": [
+                        "P",
+                        "L",
+                        "A",
+                        "N",
+                        "E",
+                        "T"
+                    ],
+                    "image_keyword": "saturn_rings_planet",
+                    "difficulty": 2,
+                    "mode": "wheel",
+                    "frequency": "high",
+                    "synonym_en": "World, orb"
+                },
+                {
+                    "word": "ORBIT",
+                    "definition_en": "The curved curved path of a celestial object around a star or planet",
+                    "translation_ar": "مدار فلكي",
+                    "letters": [
+                        "O",
+                        "R",
+                        "B",
+                        "I",
+                        "T"
+                    ],
+                    "image_keyword": "orbit_satellite_earth",
+                    "difficulty": 1,
+                    "mode": "crossword",
+                    "frequency": "high",
+                    "synonym_en": "Revolution, trajectory"
+                },
+                {
+                    "word": "GRAVITY",
+                    "definition_en": "The natural universal force that attracts objects toward each other",
+                    "translation_ar": "الجاذبية",
+                    "letters": [
+                        "G",
+                        "R",
+                        "A",
+                        "V",
+                        "I",
+                        "T",
+                        "Y"
+                    ],
+                    "image_keyword": "falling_apple_space",
+                    "difficulty": 2,
+                    "mode": "wheel",
+                    "frequency": "high",
+                    "synonym_en": "Gravitation"
+                },
+                {
+                    "word": "GALAXY",
+                    "definition_en": "A massive gravitationally bound system of stars, gas, and dark matter",
+                    "translation_ar": "مجرّة",
+                    "letters": [
+                        "G",
+                        "A",
+                        "L",
+                        "A",
+                        "X",
+                        "Y"
+                    ],
+                    "image_keyword": "spiral_galaxy_stars",
+                    "difficulty": 2,
+                    "mode": "wheel",
+                    "frequency": "high",
+                    "synonym_en": "Milky Way, star system"
+                },
+                {
+                    "word": "TELESCOPE",
+                    "definition_en": "An optical instrument designed to make distant celestial objects appear nearer",
+                    "translation_ar": "تلسكوب / مرقاب",
+                    "letters": [
+                        "T",
+                        "E",
+                        "L",
+                        "E",
+                        "S",
+                        "C",
+                        "O",
+                        "P",
+                        "E"
+                    ],
+                    "image_keyword": "james_webb_telescope",
+                    "difficulty": 3,
+                    "mode": "image",
+                    "frequency": "high",
+                    "synonym_en": "Observatory scope"
+                },
+                {
+                    "word": "ECLIPSE",
+                    "definition_en": "An astronomical event in which one celestial body obscures another",
+                    "translation_ar": "كسوف / خسوف",
+                    "letters": [
+                        "E",
+                        "C",
+                        "L",
+                        "I",
+                        "P",
+                        "S",
+                        "E"
+                    ],
+                    "image_keyword": "eclipse",
+                    "difficulty": 3,
+                    "mode": "image",
+                    "frequency": "high",
+                    "synonym_en": "Occultation, obscuration"
+                },
+                {
+                    "word": "ASTEROID",
+                    "definition_en": "A small rocky body orbiting the sun, especially between Mars and Jupiter",
+                    "translation_ar": "كويكب صخري",
+                    "letters": [
+                        "A",
+                        "S",
+                        "T",
+                        "E",
+                        "R",
+                        "O",
+                        "I",
+                        "D"
+                    ],
+                    "image_keyword": "asteroid_belt",
+                    "difficulty": 4,
+                    "mode": "wheel",
+                    "frequency": "advanced",
+                    "synonym_en": "Minor planet, space rock"
+                },
+                {
+                    "word": "INTERSTELLAR",
+                    "definition_en": "Occurring, situated, or travelling between the stars",
+                    "translation_ar": "بين النجوم",
+                    "letters": [
+                        "I",
+                        "N",
+                        "T",
+                        "E",
+                        "R",
+                        "S",
+                        "T",
+                        "E",
+                        "L",
+                        "L",
+                        "A",
+                        "R"
+                    ],
+                    "image_keyword": "nebula_deep_space",
+                    "difficulty": 5,
+                    "mode": "crossword",
+                    "frequency": "advanced",
+                    "synonym_en": "Deep space"
+                }
+            ],
+            "id": "unit_3_astronomy",
+            "title_en": "Astronomy and the Solar System",
+            "island_name": "جزيرة الفضاء والمجرات (Cosmic Island)"
+        },
+        {
+            "title_ar": "المشاعر والانفعالات والفكاهة",
+            "words": [
+                {
+                    "word": "STRESS",
+                    "definition_en": "A state of mental or emotional strain resulting from demanding circumstances",
+                    "translation_ar": "توتر / ضغط نفسي",
+                    "letters": [
+                        "S",
+                        "T",
+                        "R",
+                        "E",
+                        "S",
+                        "S"
+                    ],
+                    "image_keyword": "stress_headache",
+                    "difficulty": 2,
+                    "mode": "wheel",
+                    "frequency": "high",
+                    "synonym_en": "Tension, anxiety, pressure"
+                },
+                {
+                    "word": "EMOTION",
+                    "definition_en": "A strong feeling deriving from one's circumstances, mood, or relationships",
+                    "translation_ar": "عاطفة / انفعال",
+                    "letters": [
+                        "E",
+                        "M",
+                        "O",
+                        "T",
+                        "I",
+                        "O",
+                        "N"
+                    ],
+                    "image_keyword": "emotional_faces",
+                    "difficulty": 2,
+                    "mode": "crossword",
+                    "frequency": "high",
+                    "synonym_en": "Feeling, sentiment"
+                },
+                {
+                    "word": "LAUGHTER",
+                    "definition_en": "The action or sound of laughing, known as good therapeutic medicine",
+                    "translation_ar": "ضحك",
+                    "letters": [
+                        "L",
+                        "A",
+                        "U",
+                        "G",
+                        "H",
+                        "T",
+                        "E",
+                        "R"
+                    ],
+                    "image_keyword": "laughing_happy_people",
+                    "difficulty": 3,
+                    "mode": "image",
+                    "frequency": "high",
+                    "synonym_en": "Chuckle, giggling"
+                },
+                {
+                    "word": "EMPATHY",
+                    "definition_en": "The ability to understand and share the feelings of another person",
+                    "translation_ar": "تعاطف وجداني",
+                    "letters": [
+                        "E",
+                        "M",
+                        "P",
+                        "A",
+                        "T",
+                        "H",
+                        "Y"
+                    ],
+                    "image_keyword": "helping_hands_care",
+                    "difficulty": 4,
+                    "mode": "wheel",
+                    "frequency": "advanced",
+                    "synonym_en": "Compassion, sensitivity"
+                },
+                {
+                    "word": "ANXIETY",
+                    "definition_en": "A feeling of worry, nervousness, or unease about an imminent event",
+                    "translation_ar": "قلق مفرط",
+                    "letters": [
+                        "A",
+                        "N",
+                        "X",
+                        "I",
+                        "E",
+                        "T",
+                        "Y"
+                    ],
+                    "image_keyword": "anxious_person",
+                    "difficulty": 4,
+                    "mode": "crossword",
+                    "frequency": "advanced",
+                    "synonym_en": "Apprehension, nervousness"
+                },
+                {
+                    "word": "RESILIENCE",
+                    "definition_en": "The capacity to withstand or to recover quickly from difficult conditions",
+                    "translation_ar": "مرونة نفسية / قدرة على التعافي",
+                    "letters": [
+                        "R",
+                        "E",
+                        "S",
+                        "I",
+                        "L",
+                        "I",
+                        "E",
+                        "N",
+                        "C",
+                        "E"
+                    ],
+                    "image_keyword": "plant_growing_concrete",
+                    "difficulty": 5,
+                    "mode": "crossword",
+                    "frequency": "advanced",
+                    "synonym_en": "Toughness, endurance"
+                }
+            ],
+            "id": "unit_4_feelings",
+            "title_en": "Feelings and Humor",
+            "island_name": "جزيرة المشاعر (Emotions Island)"
+        }
+    ]
 }

@@ -49,6 +49,7 @@ public:
                     if (Theme::coins >= prices[i]) {
                         Theme::coins -= prices[i];
                         ownedBoosters[i]++;
+                        gGameData.saveProfile();
                         gAudio.playFanfare();
                         Theme::spawnCelebration({ buyRects[i].x + 75.0f, buyRects[i].y + 30.0f }, 36);
                         statusMsg = "تم شراء المعزز بنجاح!";

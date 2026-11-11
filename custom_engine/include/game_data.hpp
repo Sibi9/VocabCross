@@ -1,11 +1,16 @@
 #pragma once
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "json.hpp"
+
+namespace Theme {
+    extern int coins;
+}
 
 using json = nlohmann::json;
 
@@ -51,6 +56,8 @@ public:
     std::vector<LevelInfo> levels;
     int current_level = 0;
     int total_stars = 0;
+    int streak_day = 4;
+    int player_coins = 450;
 
     bool loadFromFile(const std::string& json_path) {
         return loadData(json_path);
@@ -141,6 +148,10 @@ public:
         return n;
     }
 
+    int unitCount(int unit) const {
+        return unitLevelCount(unit);
+    }
+
     int unitOfLevel(int index) const {
         if (index < 0 || index >= levelCount()) return 0;
         return levels[index].unit_index;
@@ -164,12 +175,88 @@ public:
         for (int i = 0; i <= index && i < levelCount(); ++i) levels[i].unlocked = true;
     }
 
+    bool saveProfile(const std::string& path = "save_profile.json") {
+        try {
+            json j;
+            j["version"] = 1;
+            j["coins"] = Theme::coins;
+            j["streak_day"] = streak_day;
+            j["current_level"] = current_level;
+            j["total_stars"] = total_stars;
+
+            json levelsArray = json::array();
+            for (const auto& l : levels) {
+                json lj;
+                lj["id"] = l.global_index;
+                lj["word"] = l.data.word;
+                lj["stars"] = l.stars;
+                lj["unlocked"] = l.unlocked;
+                levelsArray.push_back(lj);
+            }
+            j["levels"] = levelsArray;
+
+            std::string tmpPath = path + ".tmp";
+            {
+                std::ofstream out(tmpPath);
+                if (!out.is_open()) return false;
+                out << j.dump(2);
+            }
+            std::error_code ec;
+            std::filesystem::rename(tmpPath, path, ec);
+            if (ec) {
+                std::filesystem::copy_file(tmpPath, path, std::filesystem::copy_options::overwrite_existing, ec);
+                std::filesystem::remove(tmpPath, ec);
+            }
+            return true;
+        } catch (...) {
+            return false;
+        }
+    }
+
+    bool loadProfile(const std::string& path = "save_profile.json") {
+        try {
+            std::error_code ec;
+            if (!std::filesystem::exists(path, ec) || ec) return false;
+            std::ifstream in(path);
+            if (!in.is_open()) return false;
+            json j;
+            in >> j;
+
+            if (j.contains("coins") && j["coins"].is_number_integer()) {
+                Theme::coins = j["coins"].get<int>();
+                player_coins = Theme::coins;
+            }
+            if (j.contains("streak_day") && j["streak_day"].is_number_integer()) {
+                streak_day = j["streak_day"].get<int>();
+            }
+            if (j.contains("current_level") && j["current_level"].is_number_integer()) {
+                current_level = j["current_level"].get<int>();
+            }
+            if (j.contains("levels") && j["levels"].is_array()) {
+                for (const auto& lj : j["levels"]) {
+                    if (lj.contains("id") && lj["id"].is_number_integer()) {
+                        int id = lj["id"].get<int>();
+                        if (id >= 0 && id < levelCount()) {
+                            if (lj.contains("stars")) levels[id].stars = lj["stars"].get<int>();
+                            if (lj.contains("unlocked")) levels[id].unlocked = lj["unlocked"].get<bool>();
+                        }
+                    }
+                }
+            }
+            recalcTotalStars();
+            return true;
+        } catch (...) {
+            return false;
+        }
+    }
+
     void completeLevel(int index, int stars_earned) {
         if (index < 0 || index >= levelCount()) return;
         levels[index].stars = std::max(levels[index].stars, stars_earned);
         levels[index].unlocked = true;
         if (index + 1 < levelCount()) levels[index + 1].unlocked = true;
         recalcTotalStars();
+        saveProfile();
     }
 
     void recalcTotalStars() {
@@ -189,6 +276,7 @@ public:
         }
         current_level = 0;
         total_stars = 0;
+        saveProfile();
     }
 
     std::string unitShortTitle(int unit) const {
@@ -240,12 +328,15 @@ namespace Nav {
 
     inline int stageScreenForMode(const std::string& mode) {
         if (mode == "crossword") return SCREEN_CROSSWORD;
-        if (mode == "image") return SCREEN_IMAGE_GUESS;
-        return SCREEN_WHEEL;
+        if (mode == "image" || mode == "image_guess") return SCREEN_IMAGE_GUESS;
+        if (mode == "wheel") return SCREEN_WHEEL;
+        return SCREEN_CROSSWORD;
     }
 
     inline int stageScreenForLevel(int level) {
         if (level < 0 || level >= gGameData.levelCount()) return SCREEN_MAP;
-        return stageScreenForMode(gGameData.levels[level].data.mode);
+        std::string m = gGameData.levels[level].mode;
+        if (m.empty()) m = gGameData.levels[level].data.mode;
+        return stageScreenForMode(m);
     }
 }

@@ -1,179 +1,120 @@
-# خطة التكامل والربط البرمجي (VocabCross - Arabic Dictionary Integration Plan)
+# الدليل المعماري وخطة التكامل الهندسي — محرك لعبة VocabCross (C++17 / Raylib)
 
-تم اختيار واستنساخ نواة المشروع المفتوح المصدر: **LexiForge** (`game_core`)
-المستودع الأصلي: [tanyaverma20/LexiForge](https://github.com/tanyaverma20/LexiForge)
-
----
-
-## 1. تحديد مكان التحقق واكتشاف الكلمة المكتملة (Word Detection Location)
-
-يتميز المشروع ببنية معمارية نظيفة (Clean Domain-Driven Architecture) تفصل منطق اللعبة (Domain) عن واجهات العرض (Presentation). يتم رصد الكلمة عند إتمام السحب في موقعين مترابطين:
-
-### أ) على مستوى منطق اللعبة (Domain Layer):
-* **الملف:** `game_core/lib/features/game/domain/game_controller.dart`
-* **الدالة:** `SelectionResult select(Position start, Position end)` (الأسطر 39 - 111)
-* **الشرح:**
-  تقوم الدالة بتتبع خط السحب، واستخراج الحروف ومقارنتها بالكلمات المستهدفة:
-  ```dart
-  // السطر 71 - 77: مطابقة الكلمة
-  String? matchedWord;
-  for (final w in _state.puzzle.words.toSet()) {
-    if (w == letters || w == reversed) {
-      matchedWord = w;
-      break;
-    }
-  }
-
-  // السطر 105 - 110: إرجاع نتيجة الاكتشاف بنجاح
-  return SelectionResult(
-    status: SelectionStatus.found,
-    cells: cells,
-    word: matchedWord, // الكلمة التي تم حلها
-    pointsAwarded: points,
-  );
-  ```
-
-### ب) على مستوى واجهة المستخدم وتفاعل اللاعب (Presentation Layer):
-* **الملف:** `game_core/lib/features/game/presentation/screens/game_screen.dart`
-* **الدالة:** `void _onSelectionEnd(Position cell)` (الأسطر 193 - 215)
-* **الشرح:**
-  تُستدعى فور رفع المستخدم إصبعه عن الشاشة بعد سحب الحروف:
-  ```dart
-  void _onSelectionEnd(Position cell) {
-    ...
-    final result = _controller.select(start, cell);
-    setState(() {
-      _selectedCells = {};
-      if (result.status == SelectionStatus.found) {
-        // *** النقطة الجوهرية (Word Detection Hook) ***
-        final String foundWord = result.word!;
-        // هنا يتم استدعاء القاموس العربي / نافذة الترجمة
-        _onWordDiscovered(foundWord);
-        ...
-      }
-    });
-  }
-  ```
+توثق هذه الوثيقة المعمارية الهندسية الكاملة ونظام الشاشات والبيانات للعبة التعليمية **BAC Vocab Quest** (`Sibi9/VocabCross`) المبنية بمحرك أصلي فائق الأداء بلغة **C++17** ومكتبة الرسوميات **Raylib 5.0**.
 
 ---
 
-## 2. كيفية ربط القاموس العربي / خدمة الترجمة (Arabic Dictionary / Translation Integration)
+## 1. الهيكل العام للمعمارية (Engine Architecture)
 
-بمجرد اكتشاف الكلمة المكتملة، يمكن تنفيذ أحد الخيارين التاليين (محلي أو عبر API):
+يعتمد المحرك على بنية معمارية نموذجية تفصل منطق اللعبة والبيانات (Domain & Data Layer) عن طبقة العرض والرندرة التفاعلية (Presentation & Scene Graph):
 
-### الخيار 1: قاعدة بيانات محلية سريعة (Local SQLite / Asset JSON) - [الموصى به لتجربة دون إنترنت]:
-1. أضف ملف معجم بصيغة JSON داخل مجلد `assets/data/arabic_dictionary.json`:
-   ```json
-   {
-     "REACT": {
-       "translation": "يتفاعل / يبدي ردة فعل",
-       "root": "فعل",
-       "example": "He didn't react to the news."
-     },
-     "FLUTTER": {
-       "translation": "يرفرف / يتحرك بسرعة",
-       "root": "رفرف",
-       "example": "The flag fluttered in the wind."
-     }
-   }
-   ```
-2. أنشئ خدمة استعلام `DictionaryService`:
-   ```dart
-   class DictionaryService {
-     static Map<String, dynamic>? _cache;
-
-     static Future<Map<String, dynamic>?> lookup(String word) async {
-       if (_cache == null) {
-         final jsonStr = await rootBundle.loadString('assets/data/arabic_dictionary.json');
-         _cache = jsonDecode(jsonStr);
-       }
-       return _cache?[word.toUpperCase()];
-     }
-   }
-   ```
-
-### الخيار 2: استدعاء واجهة برمجة تطبيقات سحابية (REST API Lookup):
-يمكن استدعاء API مجاني أو خاص لترجمة الكلمة وتوفير النطق والمعنى:
-```dart
-Future<void> fetchArabicMeaning(String word) async {
-  final response = await http.get(
-    Uri.parse('https://api.dictionaryapi.dev/api/v2/entries/en/$word'),
-  );
-  // أو استخدام خدمة ترجمة Google Translate / MyMemory API
-}
 ```
-
-### عرض بطاقة الكلمة الفورية (Vocabulary Modal / BottomSheet):
-داخل `_onSelectionEnd` في `game_screen.dart`، قم بإظهار نافذة منبثقة تفاعلية:
-```dart
-if (result.status == SelectionStatus.found) {
-  final word = result.word!;
-  _showArabicVocabCard(context, word);
-}
-
-void _showArabicVocabCard(BuildContext context, String word) async {
-  final data = await DictionaryService.lookup(word);
-  if (!context.mounted) return;
-
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => Container(
-      padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E293B),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(word, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.amber)),
-          const SizedBox(height: 8),
-          Text(
-            data?['translation'] ?? 'جاري جلب الترجمة...',
-            textDirection: TextDirection.rtl,
-            style: const TextStyle(fontSize: 20, color: Colors.white),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('متابعة اللعب'),
-          )
-        ],
-      ),
-    ),
-  );
-}
+VocabCross_Flutter/
+├── custom_engine/                   # النواة البرمجية لمحرك اللعبة (C++17 / Raylib)
+│   ├── assets/                      # أصول اللعبة (خطوط، بيانات، صور، حزم الواجهات)
+│   │   ├── data/bac_vocabulary.json # المصدر المركزي الموحد لبيانات الـ 32 مرحلة
+│   │   ├── fonts/                   # خطوط الرندرة اللاتينية والعربية
+│   │   ├── images/                  # بطاقات الكلمات المفردة لوحدات البكالوريا
+│   │   ├── scenery/                 # خلفيات ومعالم الجزر الثلاث والأكاديمية
+│   │   └── ui_kits/                 # حزم الواجهات المقطعة وإطارات الحركة (16 فريم)
+│   ├── include/                     # الترويسات البرمجية وهياكل الشاشات
+│   │   ├── audio_manager.hpp        # إدارة الصوت الآمنة والمؤثرات التفاعلية (WASAPI Guard)
+│   │   ├── game_data.hpp            # إدارة البيانات، فهارس الوحدات، والحفظ الذري
+│   │   ├── input.hpp                # مصفوفة تحويل إحداثيات الفأرة للشاشة الافتراضية
+│   │   ├── theme.hpp                # اللوحة اللونية، الخطوط، الجزيئات ونظام العملات
+│   │   ├── ui_asset_pack.hpp        # فهرسة وتخزين أصول الواجهات بقنوات الشفافية RGBA
+│   │   ├── screen_home.hpp          # شاشة البداية المتحركة مع الكتب الطائرة
+│   │   ├── screen_maps.hpp          # خريطة الجزر الأربع وتتبع تقدم المراحل
+│   │   ├── screen_crossword.hpp     # نمط الكلمات المتقاطعة والشبكة الخشبية
+│   │   ├── screen_image_guess.hpp   # نمط تخمين الصور الأربع التفاعلي
+│   │   ├── screen_wheel.hpp         # نمط عجلة الحروف الدائرية مع مسار التوصيل
+│   │   ├── screen_shop.hpp          # متجر المعززات السحري
+│   │   ├── screen_streak.hpp        # خارطة السلسلة اليومية (أيام 1-7)
+│   │   ├── victory_modal.hpp        # نافذة الفوز والاحتفال
+│   │   └── word_card_modal.hpp      # بطاقة الكلمة التعليمية والترجمة العربية
+│   ├── src/main.cpp                 # حلقة التشغيل الرئيسية، التوجيه، والاختبار الذاتي
+│   ├── build.bat                    # سكربت التجميع الآلي عبر MSVC C++17
+│   └── run_game.bat                 # سكربت التشغيل السريع
+├── data/bac_vocabulary.json         # نسخة متطابقة قياسية بدون BOM
+└── verify_build_and_run.bat         # أداة التحقق والبناء والتشغيل
 ```
 
 ---
 
-## 3. خطوات تشغيل المشروع (Running the Project)
+## 2. إدارة البيانات وفهرسة وحدات البكالوريا (Data & Unit Indexing)
 
-مسار محرك Flutter المتوفر على جهازك: `C:\src\flutter\bin\flutter.bat`
+* **المصدر الوحيد للحقيقة (Single Source of Truth):**
+  يتم تحميل المفردات من ملف JSON قياسي واحد بترميز `UTF-8` خالٍ من بايتات `BOM`:
+  `custom_engine/assets/data/bac_vocabulary.json`.
+* **الوحدات الأربع الرسمية (32 مرحلة تعليمية):**
+  1. **الوحدة 1 (Ethics in Business):** 10 مراحل (فهارس: 0 إلى 9).
+  2. **الوحدة 2 (Safety First):** 8 مراحل (فهارس: 10 إلى 17).
+  3. **الوحدة 3 (Astronomy & Space):** 8 مراحل (فهارس: 18 إلى 25).
+  4. **الوحدة 4 (Feelings & Emotions - Academy):** 6 مراحل (فهارس: 26 إلى 31).
+* **الفهرسة الموحدة للخرائط:**
+  تعتمد شاشة الخريطة `screen_maps.hpp` على الدوال المركزية:
+  `gGameData.unitStart(unit)` و`gGameData.unitLevelCount(unit)`، مما يضمن فتح مراحل كل وحدة بدقة ودون أي تداخل بين الجزر.
 
-### 1. الدخول لمجلد نواة اللعبة:
-```powershell
-cd C:\Users\ghenemi\Desktop\VocabCross_Flutter\game_core
+---
+
+## 3. أنماط اللعب والتوجيه المركزي (Gameplay Modes & Routing)
+
+تتوزع المراحل الـ 32 على ثلاثة أنماط لعب رئيسية، ويتم توجيه اللاعب إليها عبر الدالة المركزية `Nav::stageScreenForLevel(level)`:
+1. **نمط الكلمات المتقاطعة (`crossword`) — 12 مرحلة:**
+   بناء شبكة متقاطعة أوتوماتيكياً حول الكلمة المستهدفة، مع دعم الحروف المقفلة (Hints) وخانات إدخال تفاعلية تقبل النقر ولوحة المفاتيح.
+2. **نمط تخمين الصور (`image`) — 7 مراحل:**
+   عرض أربع صور دلالية مرتبطة بمصطلح البكالوريا، مع خانات إجابة واضحة ولوحة حروف سفلية تدعم الحذف والتلميح.
+3. **نمط عجلة الحروف (`wheel`) — 13 مرحلة:**
+   عجلة دائرية تفاعلية تدعم كلاً من السحب المتصل مع خط مضيء يتبع المؤشر، والنقر المتتالي، مع زر خلط ناعم لإعادة ترتيب الحروف.
+
+---
+
+## 4. نظام الحفظ الذري الآمن (Atomic Persistence Engine)
+
+لحماية تقدم اللاعب وعدم فقدان النجوم والعملات عند الإغلاق المفاجئ:
+* يتم حفظ الملف `save_profile.json` باستخدام تقنية الكتابة الذرية:
+  1. كتابة البيانات إلى ملف مؤقت `save_profile.json.tmp`.
+  2. استبدال الملف الأصلي بالملف المؤقت عبر `std::filesystem::rename` الذرية في نظام الملفات.
+* **البيانات المحفوظة:**
+  * رصيد العملات (`Theme::coins`).
+  * يوم السلسلة الحالي (`streak_day`).
+  * المرحلة الحالية النشطة (`current_level`).
+  * حالة الفتح وعدد النجوم (0-3 نجوم) لكل مرحلة من المراحل الـ 32.
+* **الحفظ التلقائي:** يُستدعى الحفظ فور إتمام أي مرحلة بنجاح، أو شراء معزز من المتجر، أو استلام مكافأة السلسلة اليومية.
+
+---
+
+## 5. منظومة الاختبار الذاتي الآلي (`--self-test`)
+
+يتضمن المحرك جناح اختبارات برمجياً متكاملاً يتم تفعيله بتمرير الراية `--self-test`:
+```bash
+VocabCross.exe --self-test
 ```
+يقوم الجناح بفحص 22 شرطاً برمجياً دقيقاً في 5 محاور:
+1. سلامة بيانات الوحدات الـ 4، عدد المراحل (32)، وتطابق فهارس البداية لكل وحدة.
+2. صحة توجيه الـ 32 مرحلة لشاشاتها الصحيحة عبر `Nav::stageScreenForLevel`.
+3. نجاح توليد شبكات الكلمات المتقاطعة لجميع مراحل الكلمات المتقاطعة بدون استثناء.
+4. سلامة تهيئة وتعبئة قواميس ومفردات عجلات الحروف وتخمين الصور.
+5. اختبار دورة الحفظ والاسترجاع الذرية وتأكيد سلامة ملفات التخزين.
+* يعيد البرنامج كود خروج نظامي: `0` عند نجاح جميع الاختبارات، أو `1` عند وجود أي فشل.
 
-### 2. تثبيت الحزم والمكتبات:
-```powershell
-& "C:\src\flutter\bin\flutter.bat" pub get
-```
+---
 
-### 3. تشغيل اللعبة:
-* **لتشغيلها على سطح المكتب (Windows):**
-  ```powershell
-  & "C:\src\flutter\bin\flutter.bat" run -d windows
-  ```
-* **لتشغيلها على المتصفح (Chrome/Web):**
-  ```powershell
-  & "C:\src\flutter\bin\flutter.bat" run -d chrome
-  ```
-* **لتشغيلها على جهاز Android موصول:**
-  ```powershell
-  & "C:\src\flutter\bin\flutter.bat" run -d android
-  ```
+## 6. تعليمات البناء والتشغيل
 
+* **المتطلبات:**
+  * نظام تشغيل Windows (64-bit).
+  * أدوات Visual Studio C++ Build Tools (MSVC مع دعم C++17).
+* **البناء:**
+  ```cmd
+  cd custom_engine
+  build.bat
+  ```
+* **التشغيل العادي:**
+  ```cmd
+  run_game.bat
+  ```
+* **التحقق وتوليد لقطات الشاشات الـ 14:**
+  ```cmd
+  VocabCross.exe --verify-ui
+  ```

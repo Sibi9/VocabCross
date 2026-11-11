@@ -173,9 +173,13 @@ public:
                     boyTargetScroll = hoveredNodeIdx + 1;
                     boyMarching = false;
                 }
-                int totalLvls = std::max(1, gGameData.levelCount());
-                int startIdx = (unit < 3) ? gGameData.unitStart(unit) : 0;
-                selectedLevel = (startIdx + hoveredNodeIdx) % totalLvls;
+                int startIdx = gGameData.unitStart(unit);
+                int count = gGameData.unitLevelCount(unit);
+                if (count > 0) {
+                    selectedLevel = startIdx + (hoveredNodeIdx % count);
+                } else {
+                    selectedLevel = startIdx;
+                }
                 return selectedLevel;
             }
         }

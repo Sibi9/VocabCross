@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 r"""
 VocabCross - Automated C++ Runtime & Build Patch, Verification, and Launch Script
-Target Engine Directory:
-  C:\Users\ghenemi\Desktop\VocabCross_Flutter\custom_engine\
 Fixes:
   1. WASAPI Audio Access Violation (0xc0000005): Removes duplicate InitAudioDevice() / CloseAudioDevice() in main.cpp and guards audio_manager.hpp with IsAudioDeviceReady().
   2. Filesystem Iterator Safety: Replaces shared std::error_code in indexDirectory() with isolated error codes, skip_permission_denied, and lexically_relative().
@@ -15,7 +13,8 @@ import shutil
 import subprocess
 import sys
 
-TARGET_ENGINE_DEFAULT = r"C:\Users\ghenemi\Desktop\VocabCross_Flutter\custom_engine"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+TARGET_ENGINE_DEFAULT = os.path.join(SCRIPT_DIR, "custom_engine") if os.path.isdir(os.path.join(SCRIPT_DIR, "custom_engine")) else SCRIPT_DIR
 
 UI_ASSET_PACK_SAFE = r'''#pragma once
 
