@@ -38,12 +38,64 @@ public:
     int pendingNavScreen = -1;
     std::vector<UnitNodes> units;
 
+    UI::StatefulNodeButton nodeWidgets[16];
+    UI::StatefulButton tabWidgets[4];
+    UI::StatefulButton navPills[4];
+
     int boyTargetScroll = 4;
     float boyProgress = 3.0f;
     bool boyMarching = false;
 
     void init() {
         units.resize(4);
+
+        const char* tabLabels[4] = { "1.ETHICS", "2.SAFETY", "3.SPACE", "4.ACADEMY" };
+        for (int u = 0; u < 4; ++u) {
+            tabWidgets[u].bounds = Rectangle{ 10.0f + u * 131.0f, 8.0f, 125.0f, 38.0f };
+            tabWidgets[u].label = tabLabels[u];
+            tabWidgets[u].cornerRadius = 10.0f;
+            tabWidgets[u].fontSize = 13.0f;
+            tabWidgets[u].topColor = Color{ 30, 41, 59, 230 };
+            tabWidgets[u].bottomColor = Color{ 15, 23, 42, 230 };
+            tabWidgets[u].lipColor = Color{ 2, 6, 23, 230 };
+            tabWidgets[u].borderColor = Color{ 148, 163, 184, 255 };
+        }
+
+        navPills[0].bounds = Rectangle{ 10, 910, 92, 42 };
+        navPills[0].label = "HOME";
+        navPills[0].topColor = Color{ 16, 185, 129, 240 };
+        navPills[0].bottomColor = Color{ 5, 150, 105, 240 };
+        navPills[0].lipColor = Color{ 6, 95, 70, 240 };
+        navPills[0].borderColor = Color{ 167, 243, 208, 255 };
+        navPills[0].cornerRadius = 14.0f;
+        navPills[0].fontSize = 13.0f;
+
+        navPills[1].bounds = Rectangle{ 108, 910, 90, 42 };
+        navPills[1].label = "SHOP";
+        navPills[1].topColor = Color{ 124, 58, 237, 240 };
+        navPills[1].bottomColor = Color{ 76, 29, 149, 240 };
+        navPills[1].lipColor = Color{ 59, 7, 100, 240 };
+        navPills[1].borderColor = Color{ 216, 180, 254, 255 };
+        navPills[1].cornerRadius = 14.0f;
+        navPills[1].fontSize = 13.0f;
+
+        navPills[2].bounds = Rectangle{ 342, 910, 92, 42 };
+        navPills[2].label = "STREAK";
+        navPills[2].topColor = Color{ 234, 88, 12, 240 };
+        navPills[2].bottomColor = Color{ 154, 52, 18, 240 };
+        navPills[2].lipColor = Color{ 124, 45, 18, 240 };
+        navPills[2].borderColor = Color{ 254, 215, 170, 255 };
+        navPills[2].cornerRadius = 14.0f;
+        navPills[2].fontSize = 13.0f;
+
+        navPills[3].bounds = Rectangle{ 438, 910, 94, 42 };
+        navPills[3].label = "NEXT MAP";
+        navPills[3].topColor = Color{ 37, 99, 235, 240 };
+        navPills[3].bottomColor = Color{ 30, 58, 138, 240 };
+        navPills[3].lipColor = Color{ 23, 37, 84, 240 };
+        navPills[3].borderColor = Color{ 191, 219, 254, 255 };
+        navPills[3].cornerRadius = 14.0f;
+        navPills[3].fontSize = 13.0f;
 
         // Verified pixel-exact centers of the 10 3D nodes on Unit 0: Ethics Island (540x960)
         units[0].nodes = {
@@ -116,96 +168,113 @@ public:
         }
 
         Vector2 m = Input::Mouse();
-        const auto& nodes = units[unit].nodes;
-        float hitRadius = (unit == 3) ? 38.0f : 32.0f;
-        for (size_t i = 0; i < nodes.size(); ++i) {
-            if (CheckCollisionPointCircle(m, { nodes[i].x, nodes[i].y }, hitRadius)) {
-                hoveredNodeIdx = (int)i;
-                break;
+        bool mouseDown = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+        bool mouseReleased = IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
+
+        // 1. Top Unit Selector Tabs (4 Stateful Tabs)
+        for (int u = 0; u < 4; ++u) {
+            if (unit == u) {
+                tabWidgets[u].topColor = Color{ 245, 158, 11, 255 };
+                tabWidgets[u].bottomColor = Color{ 180, 83, 9, 255 };
+                tabWidgets[u].lipColor = Color{ 120, 53, 15, 255 };
+                tabWidgets[u].borderColor = Color{ 254, 240, 138, 255 };
+            } else {
+                tabWidgets[u].topColor = Color{ 30, 41, 59, 230 };
+                tabWidgets[u].bottomColor = Color{ 15, 23, 42, 230 };
+                tabWidgets[u].lipColor = Color{ 2, 6, 23, 230 };
+                tabWidgets[u].borderColor = Color{ 148, 163, 184, 255 };
+            }
+            tabWidgets[u].update(m, mouseDown, dt);
+            if (tabWidgets[u].isClicked(m, mouseReleased)) {
+                setUnit(u);
+                gAudio.playClick();
+                return -1;
             }
         }
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            // Top Unit Selector Tabs (y=6..50)
-            for (int u = 0; u < 4; ++u) {
-                Rectangle tabRec{ 10.0f + u * 131.0f, 8.0f, 125.0f, 40.0f };
-                if (CheckCollisionPointRec(m, tabRec)) {
-                    setUnit(u);
-                    gAudio.playClick();
-                    return -1;
-                }
+        // 2. Bottom Navigation Pills (4 Stateful Action Buttons)
+        navPills[3].label = (unit == 3) ? "MARCH" : "NEXT MAP";
+        for (int i = 0; i < 4; ++i) {
+            navPills[i].update(m, mouseDown, dt);
+        }
+        if (navPills[0].isClicked(m, mouseReleased)) {
+            gAudio.playClick();
+            pendingNavScreen = Nav::SCREEN_HOME;
+            return -1;
+        }
+        if (navPills[1].isClicked(m, mouseReleased)) {
+            gAudio.playClick();
+            pendingNavScreen = Nav::SCREEN_SHOP;
+            return -1;
+        }
+        if (navPills[2].isClicked(m, mouseReleased)) {
+            gAudio.playClick();
+            pendingNavScreen = Nav::SCREEN_STREAK;
+            return -1;
+        }
+        if (navPills[3].isClicked(m, mouseReleased)) {
+            if (unit == 3) {
+                boyProgress = 0.0f;
+                boyTargetScroll = 14;
+                boyMarching = true;
+                gAudio.playFanfare();
+            } else {
+                setUnit((unit + 1) % 4);
+                gAudio.playClick();
             }
+            return -1;
+        }
 
-            // Bottom Corner Navigation Pills (y=908..956)
-            if (CheckCollisionPointRec(m, Rectangle{ 8, 908, 96, 46 })) {
-                gAudio.playClick();
-                pendingNavScreen = Nav::SCREEN_HOME;
-                return -1;
-            }
-            if (CheckCollisionPointRec(m, Rectangle{ 108, 908, 90, 46 })) {
-                gAudio.playClick();
-                pendingNavScreen = Nav::SCREEN_SHOP;
-                return -1;
-            }
-            if (CheckCollisionPointRec(m, Rectangle{ 342, 908, 92, 46 })) {
-                gAudio.playClick();
-                pendingNavScreen = Nav::SCREEN_STREAK;
-                return -1;
-            }
-            if (CheckCollisionPointRec(m, Rectangle{ 438, 908, 94, 46 })) {
-                if (unit == 3) {
-                    boyProgress = 0.0f;
-                    boyTargetScroll = 14;
-                    boyMarching = true;
-                    gAudio.playFanfare();
-                } else {
-                    setUnit((unit + 1) % 4);
-                    gAudio.playClick();
-                }
-                return -1;
-            }
+        // 3. Level Nodes (Stateful 4-State Interactive Widgets)
+        const auto& nodes = units[unit].nodes;
+        int startIdx = gGameData.unitStart(unit);
+        int count = gGameData.unitLevelCount(unit);
 
-            // Node / Scroll click
-            if (hoveredNodeIdx >= 0 && hoveredNodeIdx < (int)nodes.size()) {
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            nodeWidgets[i].center = { nodes[i].x, nodes[i].y };
+            nodeWidgets[i].levelNumber = (int)i + 1;
+            nodeWidgets[i].active = ((int)i == activeNodeIdx);
+            int lvlIdx = startIdx + (count > 0 ? ((int)i % count) : 0);
+            if (lvlIdx >= 0 && lvlIdx < gGameData.levelCount()) {
+                nodeWidgets[i].unlocked = gGameData.levels[lvlIdx].unlocked;
+                nodeWidgets[i].stars = gGameData.levels[lvlIdx].stars;
+            } else {
+                nodeWidgets[i].unlocked = false;
+                nodeWidgets[i].stars = 0;
+            }
+            nodeWidgets[i].update(m, mouseDown, dt);
+            if (nodeWidgets[i].isHovered) {
+                hoveredNodeIdx = (int)i;
+            }
+            if (nodeWidgets[i].isClicked(m, mouseReleased)) {
                 gAudio.playPop();
-                activeNodeIdx = hoveredNodeIdx;
+                activeNodeIdx = (int)i;
                 if (unit == 3) {
-                    boyTargetScroll = hoveredNodeIdx + 1;
+                    boyTargetScroll = (int)i + 1;
                     boyMarching = false;
                 }
-                int startIdx = gGameData.unitStart(unit);
-                int count = gGameData.unitLevelCount(unit);
-                if (count > 0) {
-                    selectedLevel = startIdx + (hoveredNodeIdx % count);
-                } else {
-                    selectedLevel = startIdx;
-                }
+                selectedLevel = lvlIdx;
                 return selectedLevel;
             }
         }
+
         return -1;
     }
 
     void drawNodeIndicators(const std::vector<NodeDef>& nodes, float t) {
         if (nodes.empty()) return;
-        int cur = activeNodeIdx % (int)nodes.size();
-        Vector2 pos{ nodes[cur].x, nodes[cur].y };
-        float pulse = 1.0f + 0.14f * std::sin(t * 5.2f);
-        DrawCircleLines((int)pos.x, (int)pos.y, 25.0f * pulse, Color{ 253, 224, 71, 245 });
-        DrawCircleLines((int)pos.x, (int)pos.y, 28.0f * pulse, Color{ 255, 255, 255, 195 });
 
-        // Bouncing "PLAY" pointer badge above active node
-        float bounce = std::sin(t * 6.0f) * 5.0f;
-        Rectangle tag{ pos.x - 32.0f, pos.y - 54.0f + bounce, 64.0f, 22.0f };
-        UI::GradientRound(tag, 8.0f, Color{ 16, 185, 129, 245 }, Color{ 5, 150, 105, 245 });
-        UI::Rim(tag, 8.0f, Color{ 253, 224, 71, 255 }, WHITE, Color{ 6, 95, 70, 255 });
-        Theme::text3D("PLAY", { pos.x, pos.y - 43.0f + bounce }, 12, WHITE, BLACK, 1.5f, BLACK, true, true);
+        // Clean connecting path
+        for (size_t i = 0; i + 1 < nodes.size(); ++i) {
+            DrawLineEx({ nodes[i].x, nodes[i].y }, { nodes[i + 1].x, nodes[i + 1].y },
+                       8.0f, Theme::WithAlpha(Color{ 180, 83, 9, 255 }, 0.50f));
+            DrawLineEx({ nodes[i].x, nodes[i].y }, { nodes[i + 1].x, nodes[i + 1].y },
+                       4.0f, Theme::WithAlpha(Color{ 254, 240, 138, 255 }, 0.85f));
+        }
 
-        // Hover ring on any node under cursor
-        if (hoveredNodeIdx >= 0 && hoveredNodeIdx < (int)nodes.size()) {
-            Vector2 hp{ nodes[hoveredNodeIdx].x, nodes[hoveredNodeIdx].y };
-            DrawCircle((int)hp.x, (int)hp.y, 26.0f, Color{ 255, 255, 255, 55 });
-            DrawCircleLines((int)hp.x, (int)hp.y, 28.0f, WHITE);
+        // Draw stateful node widgets (Zero circular overlays)
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            nodeWidgets[i].draw();
         }
     }
 
@@ -310,39 +379,15 @@ public:
 
         Vector2 m = Input::Mouse();
 
-        // Top Unit Selector Bar
-        const char* tabLabels[4] = { "1.ETHICS", "2.SAFETY", "3.SPACE", "4.ACADEMY" };
+        // Top Unit Selector Bar (4 Stateful Tabs)
         for (int u = 0; u < 4; ++u) {
-            Rectangle tabRec{ 10.0f + u * 131.0f, 10.0f, 125.0f, 36.0f };
-            bool hov = CheckCollisionPointRec(m, tabRec);
-            Color topC = (unit == u) ? Color{ 251, 191, 36, 245 } : (hov ? Color{ 51, 65, 85, 235 } : Color{ 15, 23, 42, 205 });
-            Color botC = (unit == u) ? Color{ 217, 119, 6, 245 } : Color{ 30, 41, 59, 205 };
-            UI::GradientRound(tabRec, 12.0f, topC, botC);
-            UI::Rim(tabRec, 12.0f, WHITE, WHITE, Color{ 100, 116, 139, 220 });
-            Theme::text3D(tabLabels[u], { tabRec.x + 62.5f, tabRec.y + 18.0f },
-                          14, WHITE, BLACK, 2.0f, BLACK, true, true);
+            tabWidgets[u].draw();
         }
 
-        // Bottom Corner Navigation Pills
-        struct NavPill {
-            Rectangle r;
-            const char* label;
-            Color col;
-        };
-        NavPill pills[4] = {
-            { { 10, 912, 92, 40 }, "HOME", Color{ 16, 185, 129, 240 } },
-            { { 108, 912, 86, 40 }, "SHOP", Color{ 124, 58, 237, 240 } },
-            { { 346, 912, 88, 40 }, "STREAK", Color{ 234, 88, 12, 240 } },
-            { { 440, 912, 90, 40 }, (unit == 3) ? "GO 1->14" : "NEXT MAP", Color{ 37, 99, 235, 240 } }
-        };
+        // Bottom Navigation Pills (4 Stateful Buttons)
+        navPills[3].label = (unit == 3) ? "GO 1->14" : "NEXT MAP";
         for (int i = 0; i < 4; ++i) {
-            Rectangle dr = pills[i].r;
-            if (CheckCollisionPointRec(m, dr)) dr.y -= 2.0f;
-            UI::DropShadow(dr, 14.0f, 3.0f, 0.35f, 2.0f);
-            UI::GradientRound(dr, 14.0f, pills[i].col, Color{ 15, 23, 42, 240 });
-            UI::Rim(dr, 14.0f, Color{ 251, 191, 36, 255 }, WHITE, Color{ 180, 83, 9, 255 });
-            Theme::text3D(pills[i].label, { dr.x + dr.width * 0.5f, dr.y + 20.0f },
-                          13, WHITE, BLACK, 2.0f, BLACK, true, true);
+            navPills[i].draw();
         }
 
         Theme::drawParticles();

@@ -24,6 +24,10 @@ public:
         std::string letter;
         Vector2 pos{};
         bool used = false;
+        float currentScale = 1.0f;
+        float targetScale = 1.0f;
+        float offset = 0.0f;
+        bool isHovered = false;
     };
 
     struct CrossWordItem {
@@ -46,6 +50,10 @@ public:
     };
 
     VictoryModal victoryModal;
+    UI::StatefulButton backBtn;
+    UI::StatefulButton hintBtn;
+    UI::StatefulButton revealBtn;
+
     std::vector<CrossWordItem> words;
     std::vector<GridCell> cells;
     int minRow = 0, maxRow = 0, minCol = 0, maxCol = 0;
@@ -59,6 +67,36 @@ public:
 
     void init() {
         victoryModal.init();
+
+        backBtn.bounds = Rectangle{ 12.0f, 12.0f, 88.0f, 40.0f };
+        backBtn.label = "< MAP";
+        backBtn.cornerRadius = 12.0f;
+        backBtn.fontSize = 14.0f;
+        backBtn.topColor = Color{ 16, 185, 129, 245 };
+        backBtn.bottomColor = Color{ 5, 150, 105, 245 };
+        backBtn.lipColor = Color{ 6, 95, 70, 245 };
+        backBtn.borderColor = Color{ 167, 243, 208, 255 };
+
+        hintBtn.bounds = Rectangle{ 18.0f, 574.0f, 102.0f, 46.0f };
+        hintBtn.label = "HINT";
+        hintBtn.iconKey = "crossword/btn_hint_magnifying_glass.png";
+        hintBtn.cornerRadius = 14.0f;
+        hintBtn.fontSize = 13.0f;
+        hintBtn.topColor = Color{ 245, 158, 11, 245 };
+        hintBtn.bottomColor = Color{ 180, 83, 9, 245 };
+        hintBtn.lipColor = Color{ 120, 53, 15, 245 };
+        hintBtn.borderColor = Color{ 254, 240, 138, 255 };
+
+        revealBtn.bounds = Rectangle{ 420.0f, 730.0f, 108.0f, 46.0f };
+        revealBtn.label = "REVEAL";
+        revealBtn.iconKey = "crossword/btn_reveal_lightbulb.png";
+        revealBtn.cornerRadius = 14.0f;
+        revealBtn.fontSize = 13.0f;
+        revealBtn.topColor = Color{ 14, 165, 233, 245 };
+        revealBtn.bottomColor = Color{ 2, 132, 199, 245 };
+        revealBtn.lipColor = Color{ 3, 105, 161, 245 };
+        revealBtn.borderColor = Color{ 186, 230, 253, 255 };
+
         setLevel(0);
     }
 
@@ -438,6 +476,53 @@ public:
             return -1;
         }
 
+        Vector2 m = Input::Mouse();
+        bool mouseDown = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+        bool mouseReleased = IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
+
+        backBtn.update(m, mouseDown, dt);
+        hintBtn.update(m, mouseDown, dt);
+        revealBtn.update(m, mouseDown, dt);
+
+        if (backBtn.isClicked(m, mouseReleased)) {
+            gAudio.playClick();
+            return Nav::SCREEN_MAP;
+        }
+        if (hintBtn.isClicked(m, mouseReleased)) {
+            revealHint();
+            return -1;
+        }
+        if (revealBtn.isClicked(m, mouseReleased)) {
+            revealHint();
+            return -1;
+        }
+
+        // Letter tray orbs spring physics
+        for (size_t i = 0; i < trayOrbs.size(); ++i) {
+            auto& orb = trayOrbs[i];
+            if (orb.used) {
+                orb.targetScale = 0.82f;
+                orb.offset = 0.0f;
+                orb.isHovered = false;
+            } else {
+                orb.isHovered = CheckCollisionPointCircle(m, orb.pos, 28.0f);
+                if (orb.isHovered) {
+                    SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+                    if (mouseDown) {
+                        orb.targetScale = 0.94f;
+                        orb.offset = 3.0f;
+                    } else {
+                        orb.targetScale = 1.10f;
+                        orb.offset = 0.0f;
+                    }
+                } else {
+                    orb.targetScale = 1.0f;
+                    orb.offset = 0.0f;
+                }
+            }
+            orb.currentScale += (orb.targetScale - orb.currentScale) * std::min(1.0f, dt * 18.0f);
+        }
+
         if (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE)) {
             undoLastLetter();
         }
@@ -458,18 +543,6 @@ public:
         }
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            Vector2 m = Input::Mouse();
-            // Back / Settings Wood Gear button
-            if (CheckCollisionPointRec(m, Rectangle{ 325, 8, 68, 68 })) {
-                gAudio.playClick();
-                return Nav::SCREEN_MAP;
-            }
-            // Hint button below Detective Fox or Reveal Lightbulb button
-            if (CheckCollisionPointCircle(m, { 64, 598 }, 42.0f) ||
-                CheckCollisionPointCircle(m, { 484, 754 }, 42.0f)) {
-                revealHint();
-                return -1;
-            }
             // Clicking any typed (unlocked) cell in the crossword grid removes it (Undo!)
             float tileSz = 48.0f;
             for (size_t ci = 0; ci < cells.size(); ++ci) {
@@ -505,6 +578,19 @@ public:
             DrawRectangleGradientV(0, 0, w, h, Color{ 189, 226, 248, 255 }, Color{ 218, 240, 252, 255 });
         }
 
+        // Top HUD Bar (Stateful Back Button, Level Capsule, Coins Pill)
+        backBtn.draw();
+
+        Rectangle lvlCapsule{ 170, 12, 200, 40 };
+        UI::GlassPanel(lvlCapsule, 14.0f, Color{ 30, 41, 59, 230 }, Color{ 148, 163, 184, 255 });
+        std::string lvlStr = "LEVEL " + std::to_string(levelIndex + 1) + " / " + std::to_string(std::max(1, gGameData.levelCount()));
+        Theme::text3D(lvlStr, { 270, 32 }, 15, Color{ 253, 224, 71, 255 }, BLACK, 2.0f, BLACK, true, true);
+
+        Rectangle coinPill{ 418, 12, 110, 40 };
+        UI::GlassPanel(coinPill, 14.0f, Color{ 30, 41, 59, 230 }, Color{ 250, 204, 21, 255 });
+        UI::CoinIcon({ 436, 32 }, 12.0f);
+        Theme::text3D(std::to_string(Theme::coins), { 482, 32 }, 16, WHITE, BLACK, 1.8f, BLACK, true, true);
+
         float tileSz = 48.0f;
         if (!words.empty()) {
             const auto& activeW = words[activeWord];
@@ -529,6 +615,11 @@ public:
 
         for (const auto& cell : cells) {
             Rectangle cellRec = cellScreenRect(cell.row, cell.col, tileSz);
+            bool isCellHovered = (!cell.locked && cell.entered != '_' && CheckCollisionPointRec(m, cellRec));
+            if (isCellHovered) {
+                SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+                cellRec.y -= 2.0f;
+            }
             UI::DropShadow(cellRec, 10.0f, 3.0f, 0.30f, 2.0f);
             if (cell.entered != '_') {
                 char ch = (char)std::toupper((unsigned char)cell.entered);
@@ -539,20 +630,24 @@ public:
             }
         }
 
+        // Mascot Detective Fox + dynamic ground shadow
+        DrawEllipse(76, 582, 54, 14, Theme::WithAlpha(BLACK, 0.32f));
         Rectangle foxRec{ 4, 405, 154, 185 };
         UIAssets::drawFrameSequence("crossword/fox_rgba/frame_", 16, t, 12.0f, foxRec);
-        float hintScale = CheckCollisionPointCircle(m, { 64, 598 }, 40.0f) ? 84.0f : 78.0f;
-        UIAssets::drawCentered("crossword/btn_hint_magnifying_glass.png", { 64, 598 }, hintScale, hintScale);
 
+        // Action Buttons (4-State Stateful Buttons)
+        hintBtn.draw();
+        revealBtn.draw();
+
+        // Definition Card (Structured 3D Framed Panel)
+        Rectangle defRec{ 24, 650, 492, 72 };
+        UI::GlassPanel(defRec, 14.0f, Color{ 15, 23, 42, 230 }, Color{ 250, 204, 21, 255 });
+        Theme::text3D("DEFINITION (Click empty slots via letters below / click tile to undo):", { 270, 664 },
+                      12, Color{ 253, 224, 71, 255 }, Color{ 66, 32, 6, 255 }, 1.5f, BLACK, true, true);
         std::string defText = gGameData.levels.empty()
             ? "The practice of offering money for illegal favor"
             : gGameData.levels[levelIndex].word.definition_en;
-        Theme::text3D("DEFINITION (Click empty slots via letters below / click tile to undo):", { 250, 664 },
-                      12, Color{ 253, 224, 71, 255 }, Color{ 66, 32, 6, 255 }, 2.0f, BLACK, true, true);
-        UIAssets::drawWrappedText3D(defText, Rectangle{ 34, 682, 428, 80 }, 17, WHITE, Color{ 15, 23, 42, 255 }, 2.0f, true);
-
-        float revScale = CheckCollisionPointCircle(m, { 484, 754 }, 40.0f) ? 82.0f : 76.0f;
-        UIAssets::drawCentered("crossword/btn_reveal_lightbulb.png", { 484, 754 }, revScale, revScale);
+        UIAssets::drawWrappedText3D(defText, Rectangle{ 34, 678, 472, 42 }, 15, WHITE, Color{ 15, 23, 42, 255 }, 1.8f, true);
 
         const char* colorSuffixes[8] = {
             "_yellow.png", "_green.png", "_orange.png", "_red.png",
@@ -564,11 +659,14 @@ public:
                 char c = (char)std::toupper((unsigned char)orb.letter[0]);
                 int colorIdx = (c - 'A') % 8;
                 std::string tokKey = std::string("crossword/tray_tokens/token_") + c + colorSuffixes[colorIdx];
-                bool hov = CheckCollisionPointCircle(m, orb.pos, 28.0f);
-                float sz = hov ? 57.0f : 52.0f;
-                UIAssets::drawCentered(tokKey, orb.pos, sz, sz);
+                Vector2 p{ orb.pos.x, orb.pos.y + orb.offset };
+                float sz = 52.0f * orb.currentScale;
+                DrawCircle((int)p.x, (int)(p.y + 3.0f * orb.currentScale), sz * 0.44f, Theme::WithAlpha(BLACK, 0.35f));
+                UIAssets::drawCentered(tokKey, p, sz, sz);
             }
         }
+
+        Theme::drawParticles();
 
         if (victoryModal.active) {
             victoryModal.draw(w, h);

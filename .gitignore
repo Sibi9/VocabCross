@@ -7,8 +7,10 @@
 *.suo
 *.user
 *.tmp
+*.exe
 save_test.json
 save_test.json.tmp
+save_profile.json
 save_profile.json.tmp
 custom_engine/ui assest/
 custom_engine/ui_assets/

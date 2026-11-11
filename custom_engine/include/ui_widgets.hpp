@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "theme.hpp"
 #include "game_data.hpp"
+#include "ui_asset_pack.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -193,6 +194,267 @@ inline void IconButton3D(Rectangle r, Color top, Color bottom, Color border, boo
     Rectangle g{ r.x + 4.0f, r.y + 3.0f, r.width - 8.0f, r.height * 0.34f };
     DrawRectangleRounded(g, Roundness(g, rad * 0.6f), 8, Theme::WithAlpha(WHITE, hovered ? 0.30f : 0.20f));
 }
+
+// ---------------------------------------------------------------------------
+// Stateful Interactive Button Architecture (4-State Visual State Machine)
+// ---------------------------------------------------------------------------
+struct StatefulButton {
+    Rectangle bounds{ 0, 0, 120, 48 };
+    std::string label;
+    std::string iconKey;
+    float currentScale = 1.0f;
+    float targetScale = 1.0f;
+    float currentOffset = 0.0f;
+    float targetOffset = 0.0f;
+    float hoverGlow = 0.0f;
+    float targetGlow = 0.0f;
+    bool isHovered = false;
+    bool isPressed = false;
+    bool isDisabled = false;
+
+    Color topColor{ 34, 197, 94, 255 };
+    Color bottomColor{ 21, 128, 61, 255 };
+    Color lipColor{ 20, 83, 45, 255 };
+    Color borderColor{ 254, 240, 138, 255 };
+    Color textColor{ WHITE };
+    Color textOutline{ BLACK };
+    float cornerRadius = 14.0f;
+    float fontSize = 16.0f;
+
+    void update(Vector2 mouse, bool mouseDown, float dt = 0.016f) {
+        if (isDisabled) {
+            targetScale = 1.0f;
+            targetOffset = 0.0f;
+            targetGlow = 0.0f;
+            isHovered = false;
+            isPressed = false;
+            currentScale += (targetScale - currentScale) * std::min(1.0f, dt * 15.0f);
+            currentOffset += (targetOffset - currentOffset) * std::min(1.0f, dt * 20.0f);
+            hoverGlow += (targetGlow - hoverGlow) * std::min(1.0f, dt * 15.0f);
+            return;
+        }
+
+        isHovered = CheckCollisionPointRec(mouse, bounds);
+        if (isHovered) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            if (mouseDown) {
+                isPressed = true;
+                targetScale = 0.97f;
+                targetOffset = 3.5f; // down press offset
+                targetGlow = 0.85f;
+            } else {
+                isPressed = false;
+                targetScale = 1.05f; // +5% smooth spring scale
+                targetOffset = 0.0f;
+                targetGlow = 1.0f;   // golden hover luminance
+            }
+        } else {
+            isPressed = false;
+            targetScale = 1.0f;
+            targetOffset = 0.0f;
+            targetGlow = 0.0f;
+        }
+
+        currentScale += (targetScale - currentScale) * std::min(1.0f, dt * 16.0f);
+        currentOffset += (targetOffset - currentOffset) * std::min(1.0f, dt * 22.0f);
+        hoverGlow += (targetGlow - hoverGlow) * std::min(1.0f, dt * 16.0f);
+    }
+
+    bool isClicked(Vector2 mouse, bool mouseReleased) const {
+        if (isDisabled) return false;
+        return mouseReleased && CheckCollisionPointRec(mouse, bounds);
+    }
+
+    void draw(Font font = Theme::fontCartoon) const {
+        Vector2 center{ bounds.x + bounds.width * 0.5f, bounds.y + bounds.height * 0.5f };
+        float w = bounds.width * currentScale;
+        float h = bounds.height * currentScale;
+        float x = center.x - w * 0.5f;
+        float y = center.y - h * 0.5f + currentOffset;
+        Rectangle r{ x, y, w, h };
+        float rad = std::min(cornerRadius * currentScale, h * 0.5f);
+
+        if (isDisabled) {
+            Color disTop = Color{ 100, 116, 139, 230 };
+            Color disBot = Color{ 71, 85, 105, 230 };
+            DropShadow(r, rad, 2.0f, 0.2f);
+            GradientRound(r, rad, disTop, disBot, 2);
+            DrawRectangleRoundedLines(r, Roundness(r, rad), 14, 2.0f, Color{ 148, 163, 184, 180 });
+            if (!label.empty()) {
+                Theme::text3D(font, label, { center.x, y + h * 0.5f }, fontSize * currentScale,
+                              Color{ 203, 213, 225, 255 }, BLACK, 1.0f, BLACK, true, true);
+            }
+            return;
+        }
+
+        float shadowDy = isPressed ? 2.0f : (4.0f + (currentScale - 1.0f) * 12.0f);
+        float shadowAlpha = isPressed ? 0.20f : (0.32f + hoverGlow * 0.08f);
+        DropShadow(r, rad, shadowDy, shadowAlpha);
+
+        float lipHeight = isPressed ? 1.5f : 4.5f;
+        Rectangle lipRect{ r.x, r.y + lipHeight, r.width, r.height };
+        GradientRound(lipRect, rad, lipColor, Theme::Mix(lipColor, BLACK, 0.35f), 2);
+
+        Color topGrad = topColor;
+        Color botGrad = bottomColor;
+        if (hoverGlow > 0.01f) {
+            topGrad = Theme::Mix(topColor, Color{ 254, 240, 138, 255 }, hoverGlow * 0.22f);
+            botGrad = Theme::Mix(bottomColor, Color{ 250, 204, 21, 255 }, hoverGlow * 0.18f);
+        }
+        GradientRound(r, rad, topGrad, botGrad, 2);
+
+        Color curBorder = borderColor;
+        if (hoverGlow > 0.01f) {
+            curBorder = Theme::Mix(borderColor, WHITE, hoverGlow * 0.6f);
+        }
+        Rim(r, rad, curBorder, Theme::WithAlpha(WHITE, 0.65f + hoverGlow * 0.25f), Theme::WithAlpha(BLACK, 0.25f));
+
+        Rectangle gloss{ r.x + rad * 0.4f, r.y + 2.5f, r.width - rad * 0.8f, r.height * 0.36f };
+        DrawRectangleRounded(gloss, Roundness(gloss, rad * 0.6f), 8, Theme::WithAlpha(WHITE, 0.16f + hoverGlow * 0.10f));
+
+        float contentX = center.x;
+        if (!iconKey.empty()) {
+            float iconSize = std::min(h * 0.62f, 32.0f * currentScale);
+            if (label.empty()) {
+                UIAssets::drawCentered(iconKey, { center.x, y + h * 0.5f }, (int)iconSize, (int)iconSize);
+            } else {
+                float iconX = r.x + rad + iconSize * 0.45f;
+                UIAssets::drawCentered(iconKey, { iconX, y + h * 0.5f }, (int)iconSize, (int)iconSize);
+                contentX = r.x + (r.width + iconSize * 0.8f) * 0.5f;
+            }
+        }
+
+        if (!label.empty()) {
+            float fSize = fontSize * currentScale;
+            Theme::text3D(font, label, { contentX, y + h * 0.5f }, fSize,
+                          textColor, textOutline, std::max(1.0f, fSize * 0.09f),
+                          Theme::WithAlpha(BLACK, 0.5f), true, true);
+        }
+    }
+};
+
+// ---------------------------------------------------------------------------
+// Stateful Map Node Button (No circles on top, spring scaling, stars)
+// ---------------------------------------------------------------------------
+struct StatefulNodeButton {
+    Vector2 center{ 0, 0 };
+    int levelNumber = 1;
+    int stars = 0;
+    bool unlocked = true;
+    bool active = false;
+    float currentScale = 1.0f;
+    float targetScale = 1.0f;
+    float currentOffset = 0.0f;
+    float targetOffset = 0.0f;
+    float hoverGlow = 0.0f;
+    bool isHovered = false;
+    bool isPressed = false;
+    float radius = 30.0f;
+
+    void update(Vector2 mouse, bool mouseDown, float dt = 0.016f) {
+        if (!unlocked) {
+            targetScale = 1.0f;
+            targetOffset = 0.0f;
+            hoverGlow = 0.0f;
+            isHovered = false;
+            isPressed = false;
+            currentScale += (targetScale - currentScale) * std::min(1.0f, dt * 15.0f);
+            return;
+        }
+
+        isHovered = CheckCollisionPointCircle(mouse, center, radius);
+        if (isHovered) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            if (mouseDown) {
+                isPressed = true;
+                targetScale = 0.96f;
+                targetOffset = 3.0f;
+                hoverGlow = 0.8f;
+            } else {
+                isPressed = false;
+                targetScale = 1.08f; // +8% smooth spring scale
+                targetOffset = 0.0f;
+                hoverGlow = 1.0f;
+            }
+        } else {
+            isPressed = false;
+            targetScale = active ? (1.0f + 0.06f * std::sin(Theme::timeNow * 5.0f)) : 1.0f;
+            targetOffset = 0.0f;
+            hoverGlow = 0.0f;
+        }
+
+        currentScale += (targetScale - currentScale) * std::min(1.0f, dt * 16.0f);
+        currentOffset += (targetOffset - currentOffset) * std::min(1.0f, dt * 22.0f);
+    }
+
+    bool isClicked(Vector2 mouse, bool mouseReleased) const {
+        if (!unlocked) return false;
+        return mouseReleased && CheckCollisionPointCircle(mouse, center, radius * currentScale);
+    }
+
+    void draw() const {
+        Vector2 c{ center.x, center.y + currentOffset };
+        float r = radius * currentScale;
+
+        // Dynamic ground shadow
+        float sAlpha = isPressed ? 0.20f : (0.35f + hoverGlow * 0.12f);
+        DrawCircle((int)c.x, (int)(c.y + 4.5f), r + 1.5f, Theme::WithAlpha(BLACK, sAlpha));
+
+        if (!unlocked) {
+            DrawCircle((int)c.x, (int)c.y, r, Color{ 100, 116, 139, 255 });
+            DrawCircleLines((int)c.x, (int)c.y, r, Color{ 71, 85, 105, 255 });
+            DrawCircleLines((int)c.x, (int)c.y, r - 2.0f, Color{ 148, 163, 184, 120 });
+            // Lock icon
+            DrawRectangle((int)(c.x - 7.0f), (int)(c.y - 2.0f), 14, 12, Color{ 203, 213, 225, 255 });
+            DrawCircleLines((int)c.x, (int)(c.y - 4.0f), 6.0f, Color{ 203, 213, 225, 255 });
+            return;
+        }
+
+        Color baseTop = active ? Color{ 59, 130, 246, 255 } : Color{ 245, 158, 11, 255 };
+        Color baseBot = active ? Color{ 29, 78, 216, 255 } : Color{ 180, 83, 9, 255 };
+        Color rimOuter = Color{ 254, 240, 138, 255 };
+
+        if (hoverGlow > 0.01f) {
+            baseTop = Theme::Mix(baseTop, Color{ 254, 240, 138, 255 }, hoverGlow * 0.25f);
+            rimOuter = Theme::Mix(rimOuter, WHITE, hoverGlow * 0.6f);
+        }
+
+        // 3D bottom bevel
+        DrawCircle((int)c.x, (int)(c.y + 3.0f), r, Theme::Mix(baseBot, BLACK, 0.35f));
+        DrawCircleGradient((int)c.x, (int)c.y, r, baseTop, baseBot);
+
+        // Double Rim
+        DrawCircleLines((int)c.x, (int)c.y, r, rimOuter);
+        DrawCircleLines((int)c.x, (int)c.y, r - 2.0f, Theme::WithAlpha(WHITE, 0.65f + hoverGlow * 0.25f));
+
+        // Specular highlight
+        DrawCircle((int)(c.x - r * 0.32f), (int)(c.y - r * 0.32f), r * 0.22f, Theme::WithAlpha(WHITE, 0.45f + hoverGlow * 0.25f));
+
+        // Level Number
+        std::string numStr = std::to_string(levelNumber);
+        Theme::text3D(Theme::fontCartoon, numStr, c, 18.0f * currentScale, WHITE,
+                      Color{ 20, 20, 20, 255 }, 2.0f, Theme::WithAlpha(BLACK, 0.5f), true, true);
+
+        // Stars below node
+        float starY = c.y + r + 10.0f;
+        for (int s = 0; s < 3; ++s) {
+            float sx = c.x + (s - 1) * 14.0f;
+            bool earned = s < stars;
+            Color starFill = earned ? Color{ 253, 224, 71, 255 } : Color{ 148, 163, 184, 180 };
+            Color starOutline = earned ? Color{ 180, 83, 9, 255 } : Color{ 71, 85, 105, 255 };
+            Star5({ sx, starY }, 5.5f, 2.5f, starFill, starOutline, false);
+        }
+
+        if (active) {
+            float bounce = std::sin(Theme::timeNow * 6.0f) * 4.0f;
+            Rectangle tag{ c.x - 30.0f, c.y - r - 24.0f + bounce, 60.0f, 20.0f };
+            GradientRound(tag, 7.0f, Color{ 16, 185, 129, 255 }, Color{ 5, 150, 105, 255 });
+            Rim(tag, 7.0f, Color{ 254, 240, 138, 255 }, WHITE, Color{ 6, 95, 70, 255 });
+            Theme::text3D(Theme::fontCartoon, "PLAY", { c.x, c.y - r - 14.0f + bounce }, 11,
+                          WHITE, BLACK, 1.5f, BLACK, true, true);
+        }
+    }
+};
 
 inline void CoinIcon(Vector2 c, float r) {
     DrawCircleV({ c.x, c.y + 2.0f }, r, Color{ 146, 64, 14, 255 });

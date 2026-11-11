@@ -19,12 +19,33 @@ public:
     bool savedToNotebook = false;
     WordData currentWord;
 
+    UI::StatefulButton gotItBtn;
+    UI::StatefulButton notebookBtn;
+
     void init() {
         currentWord.word = "INTEGRITY";
         currentWord.translation_ar = "النزاهة / الاستقامة والأمانة";
         currentWord.definition_en = "The quality of being honest and having strong moral principles.";
         currentWord.synonym_en = "Honesty, Probity, Rectitude";
         currentWord.frequency = "High Frequency - Ethics in Business";
+
+        gotItBtn.bounds = Rectangle{ 146.0f, 818.0f, 336.0f, 74.0f };
+        gotItBtn.label = "GOT IT! (فهمت)";
+        gotItBtn.cornerRadius = 18.0f;
+        gotItBtn.fontSize = 18.0f;
+        gotItBtn.topColor = Color{ 249, 115, 22, 255 };
+        gotItBtn.bottomColor = Color{ 194, 65, 12, 255 };
+        gotItBtn.lipColor = Color{ 154, 52, 18, 255 };
+        gotItBtn.borderColor = Color{ 254, 215, 170, 255 };
+
+        notebookBtn.bounds = Rectangle{ 58.0f, 818.0f, 76.0f, 74.0f };
+        notebookBtn.label = "BOOK";
+        notebookBtn.cornerRadius = 16.0f;
+        notebookBtn.fontSize = 14.0f;
+        notebookBtn.topColor = Color{ 37, 99, 235, 255 };
+        notebookBtn.bottomColor = Color{ 30, 58, 138, 255 };
+        notebookBtn.lipColor = Color{ 23, 37, 84, 255 };
+        notebookBtn.borderColor = Color{ 191, 219, 254, 255 };
     }
 
     void show(const WordData& w) {
@@ -46,22 +67,32 @@ public:
         if (!active) return;
         anim = std::min(1.0f, anim + dt * 4.0f);
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            Vector2 m = Input::Mouse();
-            Rectangle gotItRec{ 140, 818, 260, 74 };
-            Rectangle audioRec{ 412, 132, 58, 58 };
-            Rectangle noteRec{ 62, 818, 68, 74 };
+        Vector2 m = Input::Mouse();
+        bool mouseDown = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+        bool mouseReleased = IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
 
-            if (CheckCollisionPointRec(m, gotItRec)) {
-                gAudio.playClick();
-                hide();
-            } else if (CheckCollisionPointRec(m, audioRec)) {
+        gotItBtn.update(m, mouseDown, dt);
+        notebookBtn.update(m, mouseDown, dt);
+
+        if (gotItBtn.isClicked(m, mouseReleased)) {
+            gAudio.playClick();
+            hide();
+            return;
+        }
+
+        if (notebookBtn.isClicked(m, mouseReleased)) {
+            savedToNotebook = !savedToNotebook;
+            gAudio.playPop();
+            Theme::spawnCelebration({ 96, 855 }, 20);
+            return;
+        }
+
+        Rectangle audioRec{ 412, 126, 58, 58 };
+        if (CheckCollisionPointRec(m, audioRec)) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 gAudio.playChime();
-                Theme::spawnCelebration({ 441, 161 }, 24);
-            } else if (CheckCollisionPointRec(m, noteRec)) {
-                savedToNotebook = !savedToNotebook;
-                gAudio.playPop();
-                Theme::spawnCelebration({ 96, 855 }, 20);
+                Theme::spawnCelebration({ 441, 155 }, 24);
             }
         }
     }
@@ -118,8 +149,8 @@ public:
             Rectangle{ 72, 706, 396, 74 }, 17, Color{ 15, 23, 42, 255 }, WHITE, 1.0f, false
         );
 
-        // Bottom Notebook Button & GOT IT! Button
-        UIAssets::drawFit("word_card/btn_notebook_blue.png", Rectangle{ 58, 818, 76, 74 });
-        UIAssets::drawFit("word_card/btn_got_it_orange.png", Rectangle{ 146, 818, 336, 74 });
+        // Bottom Notebook Button & GOT IT! Button (Stateful Buttons)
+        notebookBtn.draw();
+        gotItBtn.draw();
     }
 };
