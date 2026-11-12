@@ -17,74 +17,81 @@ public:
     WordCardModal wordCardModal;
     int pendingAction = 0; // 0=none, 1=Play(Map), 2=BoosterShop, 3=DailyStreak, 4=GraduationAcademyMap
 
-    UI::StatefulButton playBtn;
-    UI::StatefulButton dockBtns[4];
-    UI::StatefulButton soundBtn;
+    struct HomePlayButton {
+        Vector2 center{ 270.0f, 776.0f };
+        Vector2 size{ 246.0f, 144.0f };
+        float currentScale = 1.0f;
+        float targetScale = 1.0f;
+        float currentOffset = 0.0f;
+        float targetOffset = 0.0f;
+        float hoverGlow = 0.0f;
+        bool isHovered = false;
+        bool isPressed = false;
+
+        void update(Vector2 mouse, bool mouseDown, float dt) {
+            Rectangle hitArea{ center.x - size.x * 0.5f, center.y - size.y * 0.5f, size.x, size.y };
+            isHovered = CheckCollisionPointRec(mouse, hitArea);
+            if (isHovered) {
+                SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+                if (mouseDown) {
+                    isPressed = true;
+                    targetScale = 0.96f;
+                    targetOffset = 3.5f;
+                    hoverGlow = 0.8f;
+                } else {
+                    isPressed = false;
+                    targetScale = 1.05f; // +5% smooth spring scale on hover
+                    targetOffset = 0.0f;
+                    hoverGlow = 1.0f;
+                }
+            } else {
+                isPressed = false;
+                targetScale = 1.0f;
+                targetOffset = 0.0f;
+                hoverGlow = 0.0f;
+            }
+
+            currentScale += (targetScale - currentScale) * std::min(1.0f, dt * 18.0f);
+            currentOffset += (targetOffset - currentOffset) * std::min(1.0f, dt * 22.0f);
+        }
+
+        bool isClicked(Vector2 mouse, bool mouseReleased) const {
+            Rectangle hitArea{ center.x - size.x * 0.5f, center.y - size.y * 0.5f, size.x, size.y };
+            return mouseReleased && CheckCollisionPointRec(mouse, hitArea);
+        }
+
+        void draw() const {
+            Vector2 pos{ center.x, center.y + currentOffset };
+            float w = size.x * currentScale;
+            float h = size.y * currentScale;
+
+            // When hovered or pressed: draw the interactive spring-scaled button over the frame!
+            // When idle, the living animation in the frame already renders the button naturally.
+            if (currentScale > 1.005f || currentScale < 0.995f || std::abs(currentOffset) > 0.5f) {
+                DrawEllipse((int)pos.x, (int)(pos.y + h * 0.42f), w * 0.45f, 14.0f * currentScale,
+                            Theme::WithAlpha(BLACK, 0.35f));
+
+                UIAssets::drawCentered("btn_play_emerald_gold_with_text.png", pos, w, h);
+
+                if (hoverGlow > 0.05f) {
+                    DrawEllipseLines((int)pos.x, (int)(pos.y - 2.0f), w * 0.46f, h * 0.40f,
+                                     Theme::WithAlpha(Color{ 254, 240, 138, 255 }, hoverGlow * 0.65f));
+                }
+            }
+        }
+    };
+
+    HomePlayButton playBtn;
+    float soundScale = 1.0f;
+    float settingsScale = 1.0f;
+    float settingsRot = 0.0f;
 
     void init() {
         wordCardModal.init();
-
-        // 1. Grand 3D Stateful PLAY Button
-        playBtn.bounds = Rectangle{ 135, 715, 270, 78 };
-        playBtn.label = "PLAY QUEST";
-        playBtn.topColor = Color{ 34, 197, 94, 255 };
-        playBtn.bottomColor = Color{ 21, 128, 61, 255 };
-        playBtn.lipColor = Color{ 20, 83, 45, 255 };
-        playBtn.borderColor = Color{ 254, 240, 138, 255 };
-        playBtn.textColor = WHITE;
-        playBtn.cornerRadius = 38.0f;
-        playBtn.fontSize = 28.0f;
-
-        // 2. Sound Toggle Stateful Button
-        soundBtn.bounds = Rectangle{ 455, 18, 68, 42 };
-        soundBtn.label = "SFX";
-        soundBtn.topColor = Color{ 51, 65, 85, 230 };
-        soundBtn.bottomColor = Color{ 30, 41, 59, 230 };
-        soundBtn.lipColor = Color{ 15, 23, 42, 230 };
-        soundBtn.borderColor = Color{ 148, 163, 184, 255 };
-        soundBtn.cornerRadius = 12.0f;
-        soundBtn.fontSize = 15.0f;
-
-        // 3. Four Feature Dock Stateful Buttons
-        dockBtns[0].bounds = Rectangle{ 10, 902, 124, 48 };
-        dockBtns[0].label = "SHOP";
-        dockBtns[0].iconKey = "hud/icon_shop_bulb.png";
-        dockBtns[0].topColor = Color{ 124, 58, 237, 245 };
-        dockBtns[0].bottomColor = Color{ 76, 29, 149, 245 };
-        dockBtns[0].lipColor = Color{ 59, 7, 100, 245 };
-        dockBtns[0].borderColor = Color{ 216, 180, 254, 255 };
-        dockBtns[0].cornerRadius = 14.0f;
-        dockBtns[0].fontSize = 14.0f;
-
-        dockBtns[1].bounds = Rectangle{ 140, 902, 124, 48 };
-        dockBtns[1].label = "STREAK";
-        dockBtns[1].iconKey = "hud/icon_streak_fire.png";
-        dockBtns[1].topColor = Color{ 234, 88, 12, 245 };
-        dockBtns[1].bottomColor = Color{ 154, 52, 18, 245 };
-        dockBtns[1].lipColor = Color{ 124, 45, 18, 245 };
-        dockBtns[1].borderColor = Color{ 254, 215, 170, 255 };
-        dockBtns[1].cornerRadius = 14.0f;
-        dockBtns[1].fontSize = 14.0f;
-
-        dockBtns[2].bounds = Rectangle{ 270, 902, 124, 48 };
-        dockBtns[2].label = "ACADEMY";
-        dockBtns[2].iconKey = "hud/icon_academy_castle.png";
-        dockBtns[2].topColor = Color{ 37, 99, 235, 245 };
-        dockBtns[2].bottomColor = Color{ 30, 58, 138, 245 };
-        dockBtns[2].lipColor = Color{ 23, 37, 84, 245 };
-        dockBtns[2].borderColor = Color{ 191, 219, 254, 255 };
-        dockBtns[2].cornerRadius = 14.0f;
-        dockBtns[2].fontSize = 14.0f;
-
-        dockBtns[3].bounds = Rectangle{ 400, 902, 130, 48 };
-        dockBtns[3].label = "WORD CARD";
-        dockBtns[3].iconKey = "hud/icon_word_scale.png";
-        dockBtns[3].topColor = Color{ 16, 185, 129, 245 };
-        dockBtns[3].bottomColor = Color{ 6, 95, 70, 245 };
-        dockBtns[3].lipColor = Color{ 4, 47, 46, 245 };
-        dockBtns[3].borderColor = Color{ 167, 243, 208, 255 };
-        dockBtns[3].cornerRadius = 14.0f;
-        dockBtns[3].fontSize = 13.0f;
+        pendingAction = 0;
+        soundScale = 1.0f;
+        settingsScale = 1.0f;
+        settingsRot = 0.0f;
     }
 
     int update(float dt) {
@@ -98,61 +105,88 @@ public:
         bool mouseDown = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
         bool mouseReleased = IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
 
-        // Update Button States (Spring Scaling, Downward Press, Specular Shift)
+        // 1. Interactive 4-State Spring Play Button
         playBtn.update(m, mouseDown, dt);
-        soundBtn.update(m, mouseDown, dt);
-        for (int i = 0; i < 4; ++i) {
-            dockBtns[i].update(m, mouseDown, dt);
-        }
 
-        // Keyboard shortcut: ENTER or SPACE starts Play immediately
         if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || playBtn.isClicked(m, mouseReleased)) {
             gAudio.playFanfare();
-            Theme::spawnCelebration({ 270, 754 }, 64);
+            Theme::spawnCelebration(playBtn.center, 64);
             pendingAction = 1;
             return Nav::SCREEN_MAP;
         }
 
-        if (soundBtn.isClicked(m, mouseReleased)) {
-            Theme::soundOn = !Theme::soundOn;
-            soundBtn.label = Theme::soundOn ? "SFX" : "MUTE";
-            gAudio.playClick();
-            return -1;
-        }
-
-        if (dockBtns[0].isClicked(m, mouseReleased)) {
-            gAudio.playPop();
-            pendingAction = 2;
-            return -1;
-        }
-        if (dockBtns[1].isClicked(m, mouseReleased)) {
-            gAudio.playPop();
-            pendingAction = 3;
-            return -1;
-        }
-        if (dockBtns[2].isClicked(m, mouseReleased)) {
-            gAudio.playPop();
-            pendingAction = 4;
-            return -1;
-        }
-        if (dockBtns[3].isClicked(m, mouseReleased)) {
-            WordData w;
-            if (!gGameData.levels.empty()) {
-                w = gGameData.levels[0].word;
+        // 2. Sound Speaker Button at Top Right (414, 32, 50, 50)
+        Rectangle soundRec{ 414, 32, 50, 50 };
+        bool soundHov = CheckCollisionPointRec(m, soundRec);
+        float targetSoundS = soundHov ? 1.08f : 1.0f;
+        soundScale += (targetSoundS - soundScale) * std::min(1.0f, dt * 18.0f);
+        if (soundHov) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            if (mouseReleased) {
+                Theme::soundOn = !Theme::soundOn;
+                gAudio.playClick();
+                return -1;
             }
-            w.word = "INTEGRITY";
-            w.translation_ar = "النزاهة / الاستقامة والأمانة";
-            w.definition_en = "The quality of being honest and having strong moral principles.";
-            w.synonym_en = "Honesty, Probity, Rectitude";
-            w.frequency = "High Frequency - Ethics in Business";
-            wordCardModal.show(w);
-            return -1;
         }
 
-        // Clicking Trio Mascots triggers interactive celebration
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(m, Rectangle{ 20, 560, 500, 140 })) {
-            gAudio.playChime();
-            Theme::spawnCelebration(m, 42);
+        // 3. Settings Gear Button at Top Right (470, 32, 50, 50)
+        Rectangle settingsRec{ 470, 32, 50, 50 };
+        bool settingsHov = CheckCollisionPointRec(m, settingsRec);
+        float targetSettingsS = settingsHov ? 1.08f : 1.0f;
+        settingsScale += (targetSettingsS - settingsScale) * std::min(1.0f, dt * 18.0f);
+        if (settingsHov) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            settingsRot += dt * 90.0f;
+            if (mouseReleased) {
+                gAudio.playClick();
+                pendingAction = 2; // Open Booster Shop / Settings
+                return -1;
+            }
+        }
+
+        // 4. Interactive Avatar Lv.1 Badge at Top Left
+        Rectangle avatarRec{ 16, 12, 75, 80 };
+        if (CheckCollisionPointRec(m, avatarRec)) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                gAudio.playPop();
+                Theme::spawnCelebration({ 54, 52 }, 24);
+            }
+        }
+
+        // 5. Interactive Heart Life Bar at Top Center
+        Rectangle heartRec{ 115, 26, 250, 56 };
+        if (CheckCollisionPointRec(m, heartRec)) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                gAudio.playChime();
+                Theme::spawnCelebration({ 240, 54 }, 32);
+            }
+        }
+
+        // 6. Interactive Trio Mascots (Scholar Owl, Cheering Fox, Astronaut)
+        Rectangle owlRec{ 16, 680, 145, 180 };
+        Rectangle foxRec{ 375, 680, 145, 180 };
+        Rectangle astroRec{ 195, 560, 150, 140 };
+
+        if (CheckCollisionPointRec(m, owlRec)) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                gAudio.playChime();
+                Theme::spawnCelebration({ 88, 770 }, 36);
+            }
+        } else if (CheckCollisionPointRec(m, foxRec)) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                gAudio.playChime();
+                Theme::spawnCelebration({ 448, 770 }, 36);
+            }
+        } else if (CheckCollisionPointRec(m, astroRec)) {
+            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                gAudio.playPop();
+                Theme::spawnCelebration({ 270, 630 }, 36);
+            }
         }
 
         return -1;
@@ -161,51 +195,28 @@ public:
     void draw(int w, int h) {
         float t = Theme::timeNow;
 
-        // 1. Layer 1 & 2: Distortion-Free 16-Frame Living Home Scene (Clean Backdrop & Atmospheric Animation)
+        // 1. Distortion-Free 16-Frame Living Home Scene (Clean Atmosphere, Crest, Islands, Mascots & Play Button)
         if (!UIAssets::drawFrameSequence("home_living/frame_", 16, t, 10.0f,
                                          Rectangle{ 0, 0, (float)w, (float)h }, WHITE, true)) {
             DrawRectangleGradientV(0, 0, w, h, Color{ 56, 189, 248, 255 }, Color{ 253, 230, 138, 255 });
         }
 
-        // 2. Layer 3 & 4: 60-FPS Isolated RGBA Flying Magic Books with Dynamic Ground Shadows (Secondary Motion)
-        struct BookDef {
-            const char* key;
-            Vector2 basePos;
-            float freqX, ampX, freqY, ampY, rotSpeed;
-            float shadowOffsetY;
-        };
-        BookDef books[3] = {
-            { "home_props/flying_book_01_cream.png", { 56.0f, 414.0f }, 2.2f, 5.0f, 3.4f, 8.0f, 12.0f, 38.0f },
-            { "home_props/flying_book_02_purple.png", { 362.0f, 442.0f }, 2.0f, -5.0f, 3.1f, 9.0f, -13.0f, 40.0f },
-            { "home_props/flying_book_03_red.png", { 496.0f, 390.0f }, 2.5f, 4.0f, 3.6f, 7.0f, 11.0f, 36.0f }
-        };
-
-        for (int i = 0; i < 3; ++i) {
-            float offsetY = std::sin(t * books[i].freqY) * books[i].ampY;
-            float offsetX = std::cos(t * books[i].freqX) * books[i].ampX;
-            Vector2 bPos{ books[i].basePos.x + offsetX, books[i].basePos.y + offsetY };
-            float rot = std::sin(t * books[i].freqY) * books[i].rotSpeed;
-
-            // Dynamic ground shadow that scales inversely with bob height
-            float sScale = 1.0f - (offsetY / books[i].ampY) * 0.22f;
-            DrawEllipse((int)bPos.x, (int)(books[i].basePos.y + books[i].shadowOffsetY),
-                        24.0f * sScale, 6.0f * sScale, Theme::WithAlpha(BLACK, 0.24f * sScale));
-
-            UIAssets::drawCentered(books[i].key, bPos, 66, 54, rot);
+        // 2. Interactive Sound / Mute feedback
+        if (!Theme::soundOn) {
+            DrawLineEx({ 422, 40 }, { 456, 74 }, 3.5f, Color{ 239, 68, 68, 245 });
+            DrawLineEx({ 422, 40 }, { 456, 74 }, 1.5f, WHITE);
         }
 
-        // 3. Layer 5: Stateful Grand PLAY Button (4-State Visual State Machine, Zero Circular Overlay)
+        // 3. Settings Gear interactive hover rotation overlay
+        if (settingsScale > 1.01f) {
+            UIAssets::drawCentered("btn_settings_gear.png", { 495, 57 }, 50 * settingsScale, 50 * settingsScale, settingsRot);
+        }
+
+        // 4. Stateful Grand PLAY Button (4-State Spring Scale, Zero Circular Overlays, Zero Duplicate Text)
         playBtn.draw();
 
-        // 4. Layer 5: Sound Toggle Button
-        soundBtn.draw();
-
-        // 5. Layer 5: Sleek Bottom Feature Dock Buttons
-        for (int i = 0; i < 4; ++i) {
-            dockBtns[i].draw();
-        }
-
         Theme::drawParticles();
+
         if (wordCardModal.active) {
             wordCardModal.draw(w, h);
         }
